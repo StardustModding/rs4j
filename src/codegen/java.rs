@@ -118,11 +118,19 @@ pub fn gen_class_code(gen: &Generator, out: &PathBuf, class: ClassExpr) -> Resul
                     java_args = java_args,
                 ));
 
-                code.push_str(&format!(
-                    "        return this.jni_{name}(this.__pointer{java_args_names});\n    }}\n",
-                    name = name.ident()?,
-                    java_args_names = java_args_names,
-                ));
+                if ret == "void" {
+                    code.push_str(&format!(
+                        "        this.jni_{name}(this.__pointer{java_args_names});\n    }}\n",
+                        name = name.ident()?,
+                        java_args_names = java_args_names,
+                    ));
+                } else {
+                    code.push_str(&format!(
+                        "        return this.jni_{name}(this.__pointer{java_args_names});\n    }}\n",
+                        name = name.ident()?,
+                        java_args_names = java_args_names,
+                    ));
+                }
             }
         }
     }
