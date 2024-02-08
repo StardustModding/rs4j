@@ -25,6 +25,7 @@ macro_rules! from_type {
 #[derive(Debug, Clone, PartialEq, PartialOrd, Default)]
 pub enum RustTypes {
     String(String),
+    Bool(bool),
     Uint8(u8),
     Uint16(u16),
     Uint32(u32),
@@ -42,6 +43,7 @@ pub enum RustTypes {
 }
 
 from_type!(String, String);
+from_type!(bool, Bool);
 from_type!(u8, Uint8);
 from_type!(u16, Uint16);
 from_type!(u32, Uint32);
@@ -57,6 +59,7 @@ impl From<&str> for RustTypes {
     fn from(val: &str) -> Self {
         match val {
             "String" | "str" => Self::String(String::new()),
+            "bool" => Self::Bool(false),
             "i8" => Self::Int8(0),
             "i16" => Self::Int16(0),
             "i32" => Self::Int32(0),
@@ -92,6 +95,7 @@ impl IntoJavaType for RustTypes {
     fn into_java_type(&self) -> String {
         match self.clone() {
             Self::String(_) => "String".to_string(),
+            Self::Bool(_) => "Boolean".to_string(),
             Self::Uint8(_) | Self::Int8(_) => "Byte".to_string(),
             Self::Uint16(_) | Self::Int16(_) => "Short".to_string(),
             Self::Uint32(_) | Self::Int32(_) => "Integer".to_string(),
