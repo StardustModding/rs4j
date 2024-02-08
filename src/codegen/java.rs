@@ -25,7 +25,7 @@ pub fn gen_java_code(gen: Generator, exprs: Vec<Expr>, out: PathBuf) -> Result<(
 
 pub fn gen_class_code(gen: &Generator, out: &PathBuf, class: ClassExpr) -> Result<()> {
     let mut code = format!(
-        "public class {name} {{\n    private long __pointer;\n",
+        "public class {name} {{\n    private long __pointer;\n\n",
         name = class.name.ident()?
     );
 
@@ -86,7 +86,7 @@ pub fn gen_class_code(gen: &Generator, out: &PathBuf, class: ClassExpr) -> Resul
                     ));
                 } else {
                     code.push_str(&format!(
-                        "        return {cname}.jni_{name}({java_args_names});\n    }}\n",
+                        "        return {cname}.jni_{name}({java_args_names});\n    }}\n\n",
                         name = name.ident()?,
                         cname = class.name.ident()?,
                         java_args_names = java_args_names,
@@ -126,7 +126,7 @@ pub fn gen_class_code(gen: &Generator, out: &PathBuf, class: ClassExpr) -> Resul
                     ));
                 } else {
                     code.push_str(&format!(
-                        "        return this.jni_{name}(this.__pointer{java_args_names});\n    }}\n",
+                        "        return this.jni_{name}(this.__pointer{java_args_names});\n    }}\n\n",
                         name = name.ident()?,
                         java_args_names = java_args_names,
                     ));
