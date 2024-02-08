@@ -40,12 +40,12 @@ impl BindgenConfig {
         self.clone()
     }
 
-    pub fn package(&mut self, val: String) -> Self {
-        self.package = val;
+    pub fn package<T>(&mut self, val: T) -> Self where T: AsRef<str> {
+        self.package = val.as_ref().to_string();
         self.clone()
     }
 
-    pub fn pkg(&mut self, val: String) -> Self {
+    pub fn pkg<T>(&mut self, val: T) -> Self where T: AsRef<str> {
         self.package(val)
     }
 
