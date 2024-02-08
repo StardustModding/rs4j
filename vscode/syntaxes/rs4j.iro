@@ -1,0 +1,172 @@
+name                   = rs4j
+file_extensions []     = rs4j;
+
+# ============== Constants ==============
+
+__KEYWORDS \= \b(fn|mut|optional|class|static|consumed)
+__IDENTIFIER \= \b([a-z_$][\w$]*)
+__TYPE_IDENT \= \b([A-Z][\w\$]*)
+__PUNCT \= \b([;.,:&-><]+)
+__TYPE_KEYWORD \= \b(String|str|bool|(i|u)(8|16|32|64)|f(32|64))
+
+# ============== Styles ==============
+
+styles [] {
+
+.comment : style {
+   color                 = green
+   italic                = true
+   ace_scope             = comment
+   textmate_scope        = comment
+   pygments_scope        = Comment
+}
+
+.keyword : style {
+   color                 = orange
+   ace_scope             = keyword
+   textmate_scope        = keyword
+   pygments_scope        = Keyword
+}
+
+.ident : style {
+   color                 = light_blue
+   ace_scope             = entity.name
+   textmate_scope        = entity.name
+   pygments_scope        = Name.Entity
+}
+
+.type : style {
+   color                 = gold
+   ace_scope             = entity.name.type
+   textmate_scope        = entity.name.type
+   pygments_scope        = Keyword.Type
+}
+
+.numeric : style {
+   color                 = gold
+   ace_scope             = constant.numeric
+   textmate_scope        = constant.numeric
+   pygments_scope        = Number
+}
+
+.punctuation : style {
+   color                 = violet
+   ace_scope             = punctuation
+   textmate_scope        = punctuation
+   pygments_scope        = Punctuation
+}
+
+.text : style {
+   color                 = brown
+   ace_scope             = text
+   textmate_scope        = text
+   pygments_scope        = String
+}
+
+.illegal : style {
+   color                 = white
+   background_color      = red
+   ace_scope             = invalid
+   textmate_scope        = invalid
+   pygments_scope        = Generic.Error
+}
+
+}
+
+# ============== Contexts ==============
+
+contexts [] {
+
+main : context {
+   : pattern {
+      regex          \= $${__KEYWORDS}
+      styles []       = .keyword;
+   }
+   
+   : pattern {
+      regex          \= $${__TYPE_KEYWORD}
+      styles []       = .type;
+   }
+   
+   : pattern {
+      regex          \= $${__IDENTIFIER}
+      styles []       = .ident;
+   }
+   
+   : pattern {
+      regex          \= $${__TYPE_IDENT}
+      styles []       = .type;
+   }
+   
+   : include "numeric" ;
+   
+   : inline_push {
+      regex          \= (\{)
+      styles []       = .punctuation;
+      : pop {  
+         regex       \= (\};)
+         styles []    = .punctuation;
+      }
+      : include "main" ;
+   }
+   
+   : pattern {
+      regex          \= $${__PUNCT}
+      styles []       = .punctuation;
+   }
+   
+   : pattern {
+      regex          \= (&)
+      styles []       = .punctuation;
+   }
+   
+   : pattern {
+      regex          \= (->)
+      styles []       = .punctuation;
+   }
+   
+   : inline_push {
+      regex          \= (\")
+      styles []       = .punctuation;
+      default_style   = .text
+      : pop {
+         regex       \= (\")
+         styles []    = .punctuation;
+      }
+   }
+   
+   : inline_push {
+      regex          \= (\()
+      styles []       = .punctuation;
+      : pop {
+         regex       \= (\))
+         styles []    = .punctuation;
+      }
+      : include "numeric" ;
+      : pattern {
+         regex       \= (,)
+         styles []    = .punctuation;
+      }
+   }
+   
+   : pattern {
+      regex          \= (//.*)
+      styles []       = .comment;
+   }
+   
+   : pattern {
+      regex          \= ([^\s])
+      styles []       = .illegal;
+   }
+   
+}
+
+# ============== Numeric ==============
+
+numeric : context {
+   : pattern {
+      regex          \= (\b\d+)
+      styles []       = .numeric;
+   }
+}
+}

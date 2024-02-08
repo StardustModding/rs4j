@@ -1,0 +1,51 @@
+{
+    "name": "rs4j",
+    "displayName": "rs4j Language Support",
+    "description": "Language support for rs4j",
+    "version": "0.0.1",
+    "license": "MIT",
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/StardustModding/rs4j"
+    },
+    "authors": [
+        "RedstoneWizard08",
+        "Stardust Modding Contributors"
+    ],
+    "engines": {
+        "vscode": "^1.85.0"
+    },
+    "categories": [
+        "Programming Languages"
+    ],
+    "contributes": {
+        "languages": [
+            {
+                "id": "rs4j",
+                "aliases": [
+                    "rs4j",
+                    "rs4j"
+                ],
+                "extensions": [
+                    ".rs4j"
+                ],
+                "configuration": "./language-configuration.json"
+            }
+        ],
+        "grammars": [
+            {
+                "language": "rs4j",
+                "scopeName": "source.rs4j",
+                "path": "./syntaxes/rs4j.tmLanguage.json"
+            }
+        ]
+    },
+    "scripts": {
+        "fmt": "prettier --write .",
+        "vspack": "vsce package"
+    },
+    "devDependencies": {
+        "@vscode/vsce": "^2.23.0",
+        "prettier": "^3.2.5"
+    }
+}
