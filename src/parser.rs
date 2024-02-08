@@ -142,7 +142,7 @@ parser! {
             = _ e: expression() _ "\n" { e }
 
         pub rule expression() -> Expr
-            = function() / { Expr::None }
+            = function() / comment() / { Expr::None }
 
         pub rule function() -> Expr
             = [' ' | '\t' | '\n']* _ rust_name: ("[" _ rust_name: identifier() _ "]" _ { rust_name })? _ static_: "static"? _
@@ -175,6 +175,9 @@ parser! {
         pub rule _type() -> Expr
             = id: identifier() generics: ("<" generics: ((_ t: _type() _ { t }) ** ",") ">" _ { generics })?
             { Expr::Type(TypeExpr { id: Box::new(id), generics: Box::new(generics) }) }
+        
+        pub rule comment() -> Expr
+            = "//" _ data_: ([^ '\n']*) { Expr::None }
 
         rule _() = quiet! { [' ' | '\t']* }
     }
