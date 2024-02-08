@@ -5,6 +5,7 @@ use std::{
 };
 
 use anyhow::Result;
+use convert_case::{Case, Casing};
 
 use crate::{
     parser::{ClassExpr, Expr, FunctionExpr},
@@ -50,12 +51,13 @@ pub fn gen_class_code(gen: &Generator, out: &PathBuf, class: ClassExpr) -> Resul
             let mut java_args = Vec::new();
             let mut java_args_names = Vec::new();
 
-            for (name, ty) in *args {
+            for (name, ty, _, _) in *args {
                 java_args.push(format!(
                     "{} {}",
                     ty.get_type()?.as_java()?,
                     name.ident_strict()?
                 ));
+
                 java_args_names.push(name.ident_strict()?);
             }
 
@@ -64,7 +66,7 @@ pub fn gen_class_code(gen: &Generator, out: &PathBuf, class: ClassExpr) -> Resul
 
             if is_static {
                 code.push_str(&format!(
-                    "    public static native {ret} jni_{name}({java_args});\n",
+                    "    private static native {ret} jni_{name}({java_args});\n",
                     ret = ret,
                     name = name.ident()?,
                     java_args = java_args,
@@ -73,7 +75,7 @@ pub fn gen_class_code(gen: &Generator, out: &PathBuf, class: ClassExpr) -> Resul
                 code.push_str(&format!(
                     "    public static {ret} {name}({java_args}) {{\n",
                     ret = ret,
-                    name = name.ident()?,
+                    name = name.ident()?.to_case(Case::Camel),
                     java_args = java_args,
                 ));
 
@@ -105,7 +107,7 @@ pub fn gen_class_code(gen: &Generator, out: &PathBuf, class: ClassExpr) -> Resul
                 };
 
                 code.push_str(&format!(
-                    "    public native {ret} jni_{name}(long pointer{java_args});\n",
+                    "    private native {ret} jni_{name}(long pointer{java_args});\n",
                     ret = ret,
                     name = name.ident()?,
                     java_args = java_args_native,
@@ -114,7 +116,7 @@ pub fn gen_class_code(gen: &Generator, out: &PathBuf, class: ClassExpr) -> Resul
                 code.push_str(&format!(
                     "    public {ret} {name}({java_args}) {{\n",
                     ret = ret,
-                    name = name.ident()?,
+                    name = name.ident()?.to_case(Case::Camel),
                     java_args = java_args,
                 ));
 

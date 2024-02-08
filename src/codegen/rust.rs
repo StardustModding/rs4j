@@ -53,8 +53,22 @@ pub fn gen_function(
     let mut args = Vec::new();
     let mut args_names = Vec::new();
 
-    for (name, ty) in *fn_args {
-        args.push(format!("{}: {}", name.ident_strict()?, ty.ident()?));
+    for (name, ty, borrow, borrow_mut) in *fn_args {
+        let borrow = if borrow_mut {
+            "&mut"
+        } else if borrow {
+            "&"
+        } else {
+            ""
+        };
+
+        args.push(format!(
+            "{}: {}{}",
+            name.ident_strict()?,
+            borrow,
+            ty.ident()?
+        ));
+        
         args_names.push(name.ident_strict()?);
     }
 

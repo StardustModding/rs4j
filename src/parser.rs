@@ -12,8 +12,8 @@ pub struct FunctionExpr {
     /// The native function name in Rust.
     pub rust_name: Box<Option<Expr>>,
 
-    /// The function arguments.
-    pub args: Box<Vec<(Expr, Expr)>>,
+    /// The function arguments. Format: (name, type, borrow, borrow_mut)
+    pub args: Box<Vec<(Expr, Expr, bool, bool)>>,
 
     /// The return type.
     pub ret: Box<Option<Expr>>,
@@ -149,7 +149,11 @@ parser! {
             _ mut_: "mut"? _
             "fn" _ src: (src: identifier() _ "::" _ {src})? _
             name: identifier() _ "(" args: (
-                (_ i: identifier() _ ":" _ t: _type() _ { (i, t) }) ** ","
+                (
+                    _ i: identifier() _ ":" _ borrow: ("&")? _
+                    borrow_mut: ("&" _ "mut")? _
+                    t: _type() _
+                    { (i, t, borrow.is_some(), borrow_mut.is_some()) }) ** ","
             ) ")" _
             ret: ("-" _ ">" _ ret: _type() _ {ret})? _
             ";" _
