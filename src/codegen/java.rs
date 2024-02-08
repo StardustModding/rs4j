@@ -79,7 +79,7 @@ pub fn gen_class_code(gen: &Generator, out: &PathBuf, class: ClassExpr) -> Resul
 
                 if ret == "void" {
                     code.push_str(&format!(
-                        "        {cname}.jni_{name}({java_args_names});\n    }}\n",
+                        "        {cname}.jni_{name}({java_args_names});\n    }}\n\n",
                         name = name.ident()?,
                         cname = class.name.ident()?,
                         java_args_names = java_args_names,
@@ -120,7 +120,7 @@ pub fn gen_class_code(gen: &Generator, out: &PathBuf, class: ClassExpr) -> Resul
 
                 if ret == "void" {
                     code.push_str(&format!(
-                        "        this.jni_{name}(this.__pointer{java_args_names});\n    }}\n",
+                        "        this.jni_{name}(this.__pointer{java_args_names});\n    }}\n\n",
                         name = name.ident()?,
                         java_args_names = java_args_names,
                     ));
