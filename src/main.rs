@@ -1,13 +1,12 @@
-use std::{fs, path::PathBuf};
-
+use std::path::PathBuf;
 use anyhow::Result;
 use clap::Parser;
-use rs4j::{gen_code, java::gen_java_code, parser::classes, Generator};
+use rs4j::build::BindgenConfig;
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Default, Parser)]
 #[command(author, version, about, long_about = None)]
 pub struct Cli {
-    pub files: Vec<String>,
+    pub files: Vec<PathBuf>,
 
     #[arg(short, long, required = true)]
     pub pkg: String,
@@ -21,17 +20,13 @@ pub struct Cli {
 
 pub fn main() -> Result<()> {
     let args = Cli::parse();
-    let gen = Generator { package: args.pkg };
-    let mut exprs = Vec::new();
 
-    for file in args.files {
-        let data = fs::read_to_string(file)?;
-
-        exprs.append(&mut classes(data.as_str())?);
-    }
-
-    gen_code(gen.clone(), exprs.clone(), args.out_file)?;
-    gen_java_code(gen, exprs, args.out)?;
+    BindgenConfig::new()
+        .files(args.files)
+        .package(args.pkg)
+        .bindings(args.out_file)
+        .output(args.out)
+        .generate()?;
 
     Ok(())
 }

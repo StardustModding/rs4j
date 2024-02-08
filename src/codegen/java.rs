@@ -7,8 +7,11 @@ use std::{
 use anyhow::Result;
 
 use crate::{
-    types::{IntoJavaType, RustTypes}, parser::{ClassExpr, Expr, FunctionExpr}, Generator
+    parser::{ClassExpr, Expr, FunctionExpr},
+    types::{IntoJavaType, RustTypes},
 };
+
+use super::rust::Generator;
 
 pub fn gen_java_code(gen: Generator, exprs: Vec<Expr>, out: PathBuf) -> Result<()> {
     for item in exprs {
@@ -21,7 +24,10 @@ pub fn gen_java_code(gen: Generator, exprs: Vec<Expr>, out: PathBuf) -> Result<(
 }
 
 pub fn gen_class_code(gen: &Generator, out: &PathBuf, class: ClassExpr) -> Result<()> {
-    let mut code = format!("public class {name} {{\n    private long __pointer;\n", name = class.name.ident()?);
+    let mut code = format!(
+        "public class {name} {{\n    private long __pointer;\n",
+        name = class.name.ident()?
+    );
 
     for item in *class.stmts {
         if let Expr::Function(FunctionExpr {
@@ -34,15 +40,22 @@ pub fn gen_class_code(gen: &Generator, out: &PathBuf, class: ClassExpr) -> Resul
             rust_name: _,
         }) = item
         {
-            let ret = RustTypes::from(ret
-                .unwrap_or(Expr::Identifier(String::from("void")))
-                .ident()?.as_str()).into_java_type();
+            let ret = RustTypes::from(
+                ret.unwrap_or(Expr::Identifier(String::from("void")))
+                    .ident()?
+                    .as_str(),
+            )
+            .into_java_type();
 
             let mut java_args = Vec::new();
             let mut java_args_names = Vec::new();
 
             for (name, ty) in *args {
-                java_args.push(format!("{} {}", ty.get_type()?.as_java()?, name.ident_strict()?));
+                java_args.push(format!(
+                    "{} {}",
+                    ty.get_type()?.as_java()?,
+                    name.ident_strict()?
+                ));
                 java_args_names.push(name.ident_strict()?);
             }
 
@@ -56,14 +69,14 @@ pub fn gen_class_code(gen: &Generator, out: &PathBuf, class: ClassExpr) -> Resul
                     name = name.ident()?,
                     java_args = java_args,
                 ));
-    
+
                 code.push_str(&format!(
                     "    public static {ret} {name}({java_args}) {{\n",
                     ret = ret,
                     name = name.ident()?,
                     java_args = java_args,
                 ));
-    
+
                 code.push_str(&format!(
                     "        return {cname}.jni_{name}({java_args_names});\n    }}\n",
                     name = name.ident()?,
@@ -71,23 +84,31 @@ pub fn gen_class_code(gen: &Generator, out: &PathBuf, class: ClassExpr) -> Resul
                     java_args_names = java_args_names,
                 ));
             } else {
-                let java_args_names = if java_args_names.len() > 0 { format!(", {}", java_args_names) } else { java_args_names };
-                let java_args_native = if java_args.len() > 0 { format!(", {}", java_args) } else { java_args.clone() };
-                
+                let java_args_names = if java_args_names.len() > 0 {
+                    format!(", {}", java_args_names)
+                } else {
+                    java_args_names
+                };
+                let java_args_native = if java_args.len() > 0 {
+                    format!(", {}", java_args)
+                } else {
+                    java_args.clone()
+                };
+
                 code.push_str(&format!(
                     "    public native {ret} jni_{name}(long pointer{java_args});\n",
                     ret = ret,
                     name = name.ident()?,
                     java_args = java_args_native,
                 ));
-    
+
                 code.push_str(&format!(
                     "    public {ret} {name}({java_args}) {{\n",
                     ret = ret,
                     name = name.ident()?,
                     java_args = java_args,
                 ));
-    
+
                 code.push_str(&format!(
                     "        return this.jni_{name}(this.__pointer{java_args_names});\n    }}\n",
                     name = name.ident()?,
