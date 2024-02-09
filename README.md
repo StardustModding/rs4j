@@ -102,21 +102,23 @@ class Thing<A> {
 
 The following primitive* types are supported:
 
-| Rust     | Java      |
-| -------- | --------- |
-| `String` | `String`  |
-| `str`    | `String`  |
-| `bool`   | `Boolean` |
-| `u8`     | `Byte`    |
-| `u16`    | `Short`   |
-| `u32`    | `Integer` |
-| `u64`    | `Long`    |
-| `i8`     | `Byte`    |
-| `i16`    | `Short`   |
-| `i32`    | `Integer` |
-| `i64`    | `Long`    |
-| `f32`    | `Float`   |
-| `f64`    | `Double`  |
-| `()`     | `Void`    |
+| Rust     | Java         |
+| -------- | ------------ |
+| `String` | `String`     |
+| `str`    | `String`     |
+| `bool`   | `Boolean`    |
+| `u8`     | `Byte`       |
+| `u16`    | `Short`      |
+| `u32`    | `Integer`    |
+| `u64`    | `Long`       |
+| `u128`   | `BigInteger` |
+| `i8`     | `Byte`       |
+| `i16`    | `Short`      |
+| `i32`    | `Integer`    |
+| `i64`    | `Long`       |
+| `i128`   | `BigInteger` |
+| `f32`    | `Float`      |
+| `f64`    | `Double`     |
+| `()`     | `Void`       |
 
 \* Not all are primitive, but I consider them to be.
