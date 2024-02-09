@@ -80,6 +80,7 @@ pub fn gen_function(
     non_snake_case,
     improper_ctypes_definitions,
     no_mangle_generic_items,
+    deprecated,
 )]";
 
     let code = if is_static {
