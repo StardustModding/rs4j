@@ -58,6 +58,7 @@ pub fn gen_class_code(gen: &Generator, out: &PathBuf, class: ClassExpr) -> Resul
             source: _,
             rust_name: _,
             is_optional,
+            is_consumed: _,
         }) = item
         {
             let ret = RustTypes::from(

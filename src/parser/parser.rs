@@ -31,6 +31,7 @@ parser! {
         pub rule function() -> Expr
             = [' ' | '\t' | '\n']* _ rust_name: ("[" _ rust_name: identifier() _ "]" _ { rust_name })? _ static_: "static"? _
             _ mut_: "mut"? _
+            _ consumed: "consumed"? _
             _ optional: "optional"? _
             "fn" _ src: (src: identifier() _ "::" _ {src})? _
             name: identifier() _ "(" args: (
@@ -48,6 +49,7 @@ parser! {
                     is_static: static_.is_some(),
                     is_mut: mut_.is_some(),
                     is_optional: optional.is_some(),
+                    is_consumed: consumed.is_some(),
                     rust_name: Box::new(rust_name),
                     name: Box::new(name),
                     source: Box::new(src),

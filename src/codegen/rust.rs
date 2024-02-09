@@ -16,6 +16,7 @@ pub fn gen_function(
         ret: _,
         rust_name,
         is_optional: _,
+        is_consumed,
     }: FunctionExpr,
 ) -> Result<String> {
     let pkg = gen.jni_pkg();
@@ -110,6 +111,29 @@ pub unsafe extern \"system\" fn {fn_name}<'local{generics}>(
     this: jlong{args}
 ) -> jobject{bounds} {{
     let this: &mut {cname} = jlong_to_pointer::<{cname}>(this).as_mut().unwrap();
+    object_to_jobject(env, {src}::{rust_fn_name}(this{args_names}), \"{raw_cname}\".to_string())
+}}",
+                fn_name = fn_name,
+                cname = cname,
+                generics = generics,
+                bounds = bounds,
+                rust_fn_name = rust_fn_name,
+                function_head = function_head,
+                src = src,
+                args = args,
+                args_names = args_names,
+                raw_cname = raw_cname,
+            )
+        } else if is_consumed {
+            format!(
+                "{function_head}
+pub unsafe extern \"system\" fn {fn_name}<'local{generics}>(
+    mut env: *mut jni::JNIEnv<'local>,
+    class: jni::objects::JClass<'local>,
+    this: jlong{args}
+) -> jobject{bounds} {{
+    let this: &{cname} = jlong_to_pointer::<{cname}>(this).as_mut().unwrap();
+    let this = this.clone();
     object_to_jobject(env, {src}::{rust_fn_name}(this{args_names}), \"{raw_cname}\".to_string())
 }}",
                 fn_name = fn_name,

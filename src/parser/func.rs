@@ -25,4 +25,7 @@ pub struct FunctionExpr {
 
     /// Does it return an option?
     pub is_optional: bool,
+
+    /// Does it consume self?
+    pub is_consumed: bool,
 }
