@@ -41,6 +41,9 @@ fn main() -> Result<()> {
         // Where to save java classes (is a directory)
         .output(format!("{}/java", env!("CARGO_MANIFEST_DIR")))
 
+        // Enable JetBrains annotations
+        .annotations(true)
+
         // Go!
         .generate()?;
 
