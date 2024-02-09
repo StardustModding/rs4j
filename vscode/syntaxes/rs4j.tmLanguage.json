@@ -12,7 +12,7 @@
         "main": {
             "patterns": [
                 {
-                    "match": "\\b(fn|mut|optional|class|static|consumed)",
+                    "match": "\\b(fn|mut|optional|class|static|consumed|bound)",
                     "name": "keyword.rs4j"
                 },
                 {
