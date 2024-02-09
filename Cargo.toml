@@ -2,8 +2,13 @@
 name = "rs4j"
 version = "0.1.0"
 edition = "2021"
-
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+authors = ["RedstoneWizard08", "Stardust Modding Contributors"]
+license = "MIT"
+description = "A small, automatic, efficient, and easy-to-use Rust to Java bridge."
+homepage = "https://github.com/StardustModding/rs4j"
+repository = "https://github.com/StardustModding/rs4j"
+keywords = ["ffi", "bridge", "extern", "java", "interop"]
+exclude = ["vscode"]
 
 [dependencies]
 anyhow = "1.0.79"
