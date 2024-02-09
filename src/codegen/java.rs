@@ -7,10 +7,7 @@ use std::{
 use anyhow::Result;
 use convert_case::{Case, Casing};
 
-use crate::{
-    parser::{class::ClassExpr, expr::Expr, func::FunctionExpr},
-    types::{IntoJavaType, RustTypes},
-};
+use crate::parser::{class::ClassExpr, expr::Expr, func::FunctionExpr};
 
 use super::gen::Generator;
 
@@ -72,12 +69,9 @@ public class {name}{generics} {{\n    private long __pointer;\n\n",
             is_consumed: _,
         }) = item
         {
-            let ret = RustTypes::from(
-                ret.unwrap_or(Expr::Identifier(String::from("void")))
-                    .ident()?
-                    .as_str(),
-            )
-            .into_java_type();
+            let ret = ret
+                .unwrap_or(Expr::Identifier(String::from("void")))
+                .ident_java()?;
 
             let opt = if is_optional && gen.with_annotations {
                 "@Nullable\n    "
@@ -91,11 +85,11 @@ public class {name}{generics} {{\n    private long __pointer;\n\n",
             for (name, ty, _, _) in *args {
                 java_args.push(format!(
                     "{} {}",
-                    ty.get_type()?.as_java()?,
-                    name.ident_strict()?
+                    ty.ident_java()?,
+                    name.ident_strict_java()?
                 ));
 
-                java_args_names.push(name.ident_strict()?);
+                java_args_names.push(name.ident_strict_java()?);
             }
 
             let java_args = java_args.join(", ");

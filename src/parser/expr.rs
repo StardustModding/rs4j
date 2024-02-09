@@ -37,6 +37,26 @@ impl Expr {
         }
     }
 
+    pub fn ident_java(&self) -> Result<String> {
+        if let Self::Identifier(val) = self {
+            Ok(RustTypes::from(val.clone().as_str()).into_java_type())
+        } else if let Self::Type(val) = self {
+            if let Some(generics) = *val.generics.clone() {
+                let generics = generics
+                    .iter()
+                    .map(|v| v.ident_java().unwrap())
+                    .collect::<Vec<String>>()
+                    .join(", ");
+
+                Ok(format!("{}<{}>", val.id.ident_java()?, generics))
+            } else {
+                Ok(val.id.ident_java()?)
+            }
+        } else {
+            Err(anyhow!("Expected Self::Identifier(_), got {:?}", self))
+        }
+    }
+
     pub fn ident_strict(&self) -> Result<String> {
         if let Self::Identifier(val) = self {
             Ok(val.clone())
