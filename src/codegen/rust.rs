@@ -15,6 +15,7 @@ pub fn gen_function(
         args: fn_args,
         ret: _,
         rust_name,
+        is_optional: _,
     }: FunctionExpr,
 ) -> Result<String> {
     let pkg = gen.jni_pkg();

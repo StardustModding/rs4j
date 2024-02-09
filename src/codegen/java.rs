@@ -54,6 +54,7 @@ pub fn gen_class_code(gen: &Generator, out: &PathBuf, class: ClassExpr) -> Resul
             ret,
             source: _,
             rust_name: _,
+            is_optional,
         }) = item
         {
             let ret = RustTypes::from(
@@ -62,6 +63,8 @@ pub fn gen_class_code(gen: &Generator, out: &PathBuf, class: ClassExpr) -> Resul
                     .as_str(),
             )
             .into_java_type();
+
+            let opt = if is_optional { "@Nullable\n    " } else { "" };
 
             let mut java_args = Vec::new();
             let mut java_args_names = Vec::new();
@@ -81,21 +84,23 @@ pub fn gen_class_code(gen: &Generator, out: &PathBuf, class: ClassExpr) -> Resul
 
             if is_static {
                 code.push_str(&format!(
-                    "    {suppress}\n    private static native{generics_s} {ret} jni_{name}({java_args});\n",
+                    "    {suppress}\n    {opt}private static native{generics_s} {ret} jni_{name}({java_args});\n\n",
                     ret = ret,
                     name = name.ident()?,
                     java_args = java_args,
                     generics_s = generics_s,
                     suppress = suppress,
+                    opt = opt,
                 ));
 
                 code.push_str(&format!(
-                    "    {suppress}\n    public static{generics_s} {ret} {name}({java_args}) {{\n",
+                    "    {suppress}\n    {opt}public static{generics_s} {ret} {name}({java_args}) {{\n",
                     ret = ret,
                     name = name.ident()?.to_case(Case::Camel),
                     java_args = java_args,
                     generics_s = generics_s,
                     suppress = suppress,
+                    opt = opt,
                 ));
 
                 if ret == "void" {
@@ -126,20 +131,22 @@ pub fn gen_class_code(gen: &Generator, out: &PathBuf, class: ClassExpr) -> Resul
                 };
 
                 code.push_str(&format!(
-                    "    {suppress}\n    private native{generics_s} {ret} jni_{name}(long pointer{java_args});\n",
+                    "    {suppress}\n    {opt}private native{generics_s} {ret} jni_{name}(long pointer{java_args});\n\n",
                     ret = ret,
                     name = name.ident()?,
                     java_args = java_args_native,
                     generics_s = generics_s,
                     suppress = suppress,
+                    opt = opt,
                 ));
 
                 code.push_str(&format!(
-                    "    {suppress}\n    public {ret} {name}({java_args}) {{\n",
+                    "    {suppress}\n    {opt}public {ret} {name}({java_args}) {{\n",
                     ret = ret,
                     name = name.ident()?.to_case(Case::Camel),
                     java_args = java_args,
                     suppress = suppress,
+                    opt = opt,
                 ));
 
                 if ret == "void" {

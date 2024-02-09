@@ -22,4 +22,7 @@ pub struct FunctionExpr {
 
     /// Does it need &mut self?
     pub is_mut: bool,
+
+    /// Does it return an option?
+    pub is_optional: bool,
 }
