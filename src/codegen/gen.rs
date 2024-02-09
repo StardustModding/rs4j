@@ -7,6 +7,7 @@ use super::rust::gen_function;
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Default)]
 pub struct Generator {
     pub package: String,
+    pub with_annotations: bool,
 }
 
 impl Generator {

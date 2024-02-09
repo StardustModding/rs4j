@@ -1,6 +1,6 @@
 [package]
 name = "rs4j"
-version = "0.3.1"
+version = "0.4.0"
 edition = "2021"
 authors = ["RedstoneWizard08", "Stardust Modding Contributors"]
 license = "MIT"

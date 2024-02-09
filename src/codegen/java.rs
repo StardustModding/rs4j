@@ -39,11 +39,22 @@ pub fn gen_class_code(gen: &Generator, out: &PathBuf, class: ClassExpr) -> Resul
         format!(" {}", generics)
     };
 
+    let annotations = if gen.with_annotations {
+        "\nimport org.jetbrains.annotations.Nullable;"
+    } else {
+        ""
+    };
+
     let mut code = format!(
-        "package {pkg};\n\nimport java.util.*;\n\npublic class {name}{generics} {{\n    private long __pointer;\n\n",
+        "package {pkg};
+
+import java.util.*;{annotations}
+
+public class {name}{generics} {{\n    private long __pointer;\n\n",
         pkg = gen.package,
         name = class.name.ident()?,
         generics = generics,
+        annotations = annotations,
     );
 
     let suppress = "@SuppressWarnings(\"hiding\")";
@@ -68,7 +79,11 @@ pub fn gen_class_code(gen: &Generator, out: &PathBuf, class: ClassExpr) -> Resul
             )
             .into_java_type();
 
-            let opt = if is_optional { "@Nullable\n    " } else { "" };
+            let opt = if is_optional && gen.with_annotations {
+                "@Nullable\n    "
+            } else {
+                ""
+            };
 
             let mut java_args = Vec::new();
             let mut java_args_names = Vec::new();

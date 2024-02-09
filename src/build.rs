@@ -23,6 +23,9 @@ pub struct BindgenConfig {
 
     /// The path of the file to generate Rust bindings in.
     pub bindings: PathBuf,
+
+    /// Enable using JetBrains annotations?
+    pub annotations: bool,
 }
 
 impl BindgenConfig {
@@ -32,6 +35,7 @@ impl BindgenConfig {
             files: Vec::new(),
             output: PathBuf::new(),
             bindings: PathBuf::new(),
+            annotations: false,
         }
     }
 
@@ -98,6 +102,11 @@ impl BindgenConfig {
         Ok(self.clone())
     }
 
+    pub fn annotations(&mut self, val: bool) -> Self {
+        self.annotations = val;
+        self.clone()
+    }
+
     pub fn generate(&self) -> Result<()> {
         equals_throw!(
             self.files,
@@ -122,7 +131,9 @@ impl BindgenConfig {
     fn generate_bindings(&self) -> Result<()> {
         let gen = Generator {
             package: self.package.clone(),
+            with_annotations: self.annotations,
         };
+
         let mut exprs = Vec::new();
 
         for file in self.files.clone() {
