@@ -26,11 +26,13 @@ pub fn gen_java_code(gen: Generator, exprs: Vec<Expr>, out: PathBuf) -> Result<(
 
 pub fn gen_class_code(gen: &Generator, out: &PathBuf, class: ClassExpr) -> Result<()> {
     let generics = class.generics();
+
     let generics = if generics.is_empty() {
         String::new()
     } else {
         format!("<{}>", generics)
     };
+
     let generics_s = if generics.is_empty() {
         String::new()
     } else {
@@ -38,7 +40,8 @@ pub fn gen_class_code(gen: &Generator, out: &PathBuf, class: ClassExpr) -> Resul
     };
 
     let mut code = format!(
-        "public class {name}{generics} {{\n    private long __pointer;\n\n",
+        "package {pkg};\n\nimport java.util.*;\n\npublic class {name}{generics} {{\n    private long __pointer;\n\n",
+        pkg = gen.package,
         name = class.name.ident()?,
         generics = generics,
     );
