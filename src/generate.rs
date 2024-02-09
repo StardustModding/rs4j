@@ -1,13 +1,23 @@
-use std::{fs::{create_dir_all, File}, io::Write, path::PathBuf};
+use crate::{
+    codegen::gen::{gen_class, Generator},
+    parser::expr::Expr,
+};
 use anyhow::Result;
-use crate::{codegen::rust::{gen_class, Generator}, parser::Expr};
+use std::{
+    fs::{create_dir_all, File},
+    io::Write,
+    path::PathBuf,
+};
 
 pub const TYPES_CODE: &'static str = include_str!("./types.rs");
 pub const INCLUDES_CODE: &'static str = include_str!("./include.rs");
 pub const CONVERSIONS_CODE: &'static str = include_str!("./conv.rs");
 
 pub fn gen_code(gen: Generator, exprs: Vec<Expr>, out_file: PathBuf) -> Result<()> {
-    let mut data = format!("{}\n\n{}\n\n{}\n\n", INCLUDES_CODE, TYPES_CODE, CONVERSIONS_CODE);
+    let mut data = format!(
+        "{}\n\n{}\n\n{}\n\n",
+        INCLUDES_CODE, TYPES_CODE, CONVERSIONS_CODE
+    );
 
     for expr in exprs {
         if let Expr::Class(class) = expr {

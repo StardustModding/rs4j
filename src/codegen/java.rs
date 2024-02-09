@@ -8,11 +8,11 @@ use anyhow::Result;
 use convert_case::{Case, Casing};
 
 use crate::{
-    parser::{ClassExpr, Expr, FunctionExpr},
+    parser::{class::ClassExpr, expr::Expr, func::FunctionExpr},
     types::{IntoJavaType, RustTypes},
 };
 
-use super::rust::Generator;
+use super::gen::Generator;
 
 pub fn gen_java_code(gen: Generator, exprs: Vec<Expr>, out: PathBuf) -> Result<()> {
     for item in exprs {
@@ -25,10 +25,25 @@ pub fn gen_java_code(gen: Generator, exprs: Vec<Expr>, out: PathBuf) -> Result<(
 }
 
 pub fn gen_class_code(gen: &Generator, out: &PathBuf, class: ClassExpr) -> Result<()> {
+    let generics = class.generics();
+    let generics = if generics.is_empty() {
+        String::new()
+    } else {
+        format!("<{}>", generics)
+    };
+    let generics_s = if generics.is_empty() {
+        String::new()
+    } else {
+        format!(" {}", generics)
+    };
+
     let mut code = format!(
-        "public class {name} {{\n    private long __pointer;\n\n",
-        name = class.name.ident()?
+        "public class {name}{generics} {{\n    private long __pointer;\n\n",
+        name = class.name.ident()?,
+        generics = generics,
     );
+
+    let suppress = "@SuppressWarnings(\"hiding\")";
 
     for item in *class.stmts {
         if let Expr::Function(FunctionExpr {
@@ -66,17 +81,21 @@ pub fn gen_class_code(gen: &Generator, out: &PathBuf, class: ClassExpr) -> Resul
 
             if is_static {
                 code.push_str(&format!(
-                    "    private static native {ret} jni_{name}({java_args});\n",
+                    "    {suppress}\n    private static native{generics_s} {ret} jni_{name}({java_args});\n",
                     ret = ret,
                     name = name.ident()?,
                     java_args = java_args,
+                    generics_s = generics_s,
+                    suppress = suppress,
                 ));
 
                 code.push_str(&format!(
-                    "    public static {ret} {name}({java_args}) {{\n",
+                    "    {suppress}\n    public static{generics_s} {ret} {name}({java_args}) {{\n",
                     ret = ret,
                     name = name.ident()?.to_case(Case::Camel),
                     java_args = java_args,
+                    generics_s = generics_s,
+                    suppress = suppress,
                 ));
 
                 if ret == "void" {
@@ -107,17 +126,20 @@ pub fn gen_class_code(gen: &Generator, out: &PathBuf, class: ClassExpr) -> Resul
                 };
 
                 code.push_str(&format!(
-                    "    private native {ret} jni_{name}(long pointer{java_args});\n",
+                    "    {suppress}\n    private native{generics_s} {ret} jni_{name}(long pointer{java_args});\n",
                     ret = ret,
                     name = name.ident()?,
                     java_args = java_args_native,
+                    generics_s = generics_s,
+                    suppress = suppress,
                 ));
 
                 code.push_str(&format!(
-                    "    public {ret} {name}({java_args}) {{\n",
+                    "    {suppress}\n    public {ret} {name}({java_args}) {{\n",
                     ret = ret,
                     name = name.ident()?.to_case(Case::Camel),
                     java_args = java_args,
+                    suppress = suppress,
                 ));
 
                 if ret == "void" {

@@ -1,7 +1,7 @@
-use std::path::PathBuf;
 use anyhow::Result;
 use clap::Parser;
 use rs4j::build::BindgenConfig;
+use std::path::PathBuf;
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Default, Parser)]
 #[command(author, version, about, long_about = None)]

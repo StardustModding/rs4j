@@ -19,7 +19,7 @@ macro_rules! from_type {
                 }
             }
         }
-    }
+    };
 }
 
 #[derive(Debug, Clone, PartialEq, PartialOrd, Default)]

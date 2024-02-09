@@ -4,5 +4,5 @@ macro_rules! equals_throw {
         if $self.$var == $val {
             return Err($crate::anyhow::anyhow!($err));
         }
-    }
+    };
 }
