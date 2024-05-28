@@ -7,6 +7,9 @@ pub struct ClassExpr {
     /// The name of the class.
     pub name: Box<Expr>,
 
+    /// The real rust of the class.
+    pub real_name: Box<(Expr, Option<Vec<Expr>>)>,
+
     /// The statements in the class.
     pub stmts: Box<Vec<Expr>>,
 
@@ -29,6 +32,22 @@ impl ClassExpr {
         } else {
             Ok(ident)
         }
+    }
+
+    pub fn ident_rust(&self) -> Result<String> {
+        let mut id = self.real_name.0.ident()?;
+
+        if let Some(generics) = self.real_name.1.clone() {
+            let it = generics
+                .iter()
+                .map(|v| v.ident().unwrap())
+                .collect::<Vec<_>>()
+                .join(", ");
+
+            id.push_str(&format!("<{}>", it));
+        }
+
+        Ok(id)
     }
 
     pub fn generics(&self) -> String {

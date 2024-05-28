@@ -8,7 +8,7 @@ pub struct BoundExpr {
     pub name: Box<Expr>,
 
     /// The traits for this type.
-    pub traits: Box<Vec<Expr>>,
+    pub traits: String,
 }
 
 impl BoundExpr {
@@ -16,11 +16,7 @@ impl BoundExpr {
         Ok(format!(
             "{}: {}",
             self.name.ident_strict()?,
-            self.traits
-                .iter()
-                .map(|v| v.ident().unwrap())
-                .collect::<Vec<String>>()
-                .join(" + ")
+            self.traits,
         ))
     }
 }

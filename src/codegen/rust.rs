@@ -24,8 +24,8 @@ pub fn gen_function(
     let fn_name = format!("Java_{}_{}_jni_{}", pkg, class.name.ident()?, fn_name_id);
     let raw_cname = format!("{}.{}", gen.package, class.name.ident()?).replace(".", "/");
     let rust_fn_name = rust_name.unwrap_or(Expr::Identifier(fn_name_id)).ident()?;
-    let src = source.unwrap_or(*class.name.clone()).ident()?;
-    let cname = class.ident()?;
+    let src = source.unwrap_or(class.real_name.clone().0).ident()?;
+    let cname = class.ident_rust()?;
     // let ret = ret.unwrap_or(Expr::Identifier("()".to_string())).ident()?;
 
     let mut args = Vec::new();

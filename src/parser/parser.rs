@@ -5,8 +5,13 @@ parser! {
         pub rule class() -> Expr
             = [' ' | '\t' | '\n']* "class" _ name: identifier() _
             generics: ("<" generics: ((_ t: identifier() _ { t }) ** ",") ">" _ { generics })?
+            real_name: (
+                "=" _ real: identifier() _
+                real_generics: ("<" generics: ((_ t: identifier() _ { t }) ** ",") ">" _ { generics })? _
+                { (real, real_generics) }
+            )?
             "{" _ stmts: statements() _ "}" _ ";" _
-            { Expr::Class(ClassExpr { name: Box::new(name), stmts: Box::new(stmts), generics: Box::new(generics) }) }
+            { Expr::Class(ClassExpr { name: Box::new(name.clone()), real_name: Box::new(real_name.unwrap_or((name, generics.clone()))), stmts: Box::new(stmts), generics: Box::new(generics) }) }
 
         pub rule classes() -> Vec<Expr>
             = c: (class_expr()*) { c }
@@ -25,8 +30,8 @@ parser! {
 
         pub rule bound() -> Expr
             = [' ' | '\t' | '\n']* _ "bound" _ name: identifier() _ ":"
-            _ traits: ((_ tr: _type() _ { tr }) ** "+") _ ";" _
-            { Expr::Bound(BoundExpr { name: Box::new(name), traits: Box::new(traits) }) }
+            _ traits: ([^';']+) _ ";" _
+            { Expr::Bound(BoundExpr { name: Box::new(name), traits: String::from_iter(traits) }) }
 
         pub rule function() -> Expr
             = [' ' | '\t' | '\n']* _ rust_name: ("[" _ rust_name: identifier() _ "]" _ { rust_name })? _ static_: "static"? _
