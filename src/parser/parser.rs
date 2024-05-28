@@ -4,10 +4,10 @@ parser! {
     pub grammar rs4j_parser() for str {
         pub rule class() -> Expr
             = [' ' | '\t' | '\n']* "class" _ name: identifier() _
-            generics: ("<" generics: ((_ t: identifier() _ { t }) ** ",") ">" _ { generics })?
+            generics: (generics())?
             real_name: (
                 "=" _ real: identifier() _
-                real_generics: ("<" generics: ((_ t: identifier() _ { t }) ** ",") ">" _ { generics })? _
+                real_generics: (generics())? _
                 { (real, real_generics) }
             )?
             "{" _ stmts: statements() _ "}" _ ";" _
@@ -28,29 +28,42 @@ parser! {
         pub rule expression() -> Expr
             = function() / bound() / comment() / { Expr::None }
 
+        pub rule generics() -> Vec<Expr>
+            = "<" generics: ((_ t: _type() _ { t }) ** ",") ">" _ { generics }
+        
+        pub rule generics_with_bounds() -> Vec<(Expr, Option<Vec<Expr>>)>
+            = "<" generics: ((_ t: _type() _ b: (":" _ traits: (_type() ** ",") _ { traits })? _ { (t, b) }) ** ",") ">" _ { generics }
+
         pub rule bound() -> Expr
             = [' ' | '\t' | '\n']* _ "bound" _ name: identifier() _ ":"
             _ traits: ([^';']+) _ ";" _
             { Expr::Bound(BoundExpr { name: Box::new(name), traits: String::from_iter(traits) }) }
 
         pub rule function() -> Expr
-            = [' ' | '\t' | '\n']* _ rust_name: ("[" _ rust_name: identifier() _ "]" _ { rust_name })? _ static_: "static"? _
+            = [' ' | '\t' | '\n']* _ rust_name: ("[" _ rust_name: identifier() _ "]" _ { rust_name })?
+            _ static_: "static"? _
             _ mut_: "mut"? _
             _ consumed: "consumed"? _
             _ optional: "optional"? _
             "fn" _ src: (src: identifier() _ "::" _ {src})? _
-            name: identifier() _ "(" args: (
+            name: identifier() _
+            generics: (generics_with_bounds())? _
+            "(" args: (
                 (
-                    _ i: identifier() _ ":" _ borrow: ("&")? _
-                    borrow_mut: ("&" _ "mut")? _
+                    i: identifier() _ ":" _
+                    into: ("#into")? _
+                    borrow: ("&")? _
+                    borrow_mut: ("mut")? _
                     t: _type() _
-                    { (i, t, borrow.is_some(), borrow_mut.is_some()) }) ** ","
+                    { (i, t, borrow.is_some(), borrow.is_some() && borrow_mut.is_some(), false) }
+                ) ** ","
             ) ")" _
             ret: ("-" _ ">" _ ret: _type() _ {ret})? _
             ";" _
 
             {
                 Expr::Function(FunctionExpr {
+                    generics: Box::new(generics.unwrap_or_default()),
                     is_static: static_.is_some(),
                     is_mut: mut_.is_some(),
                     is_optional: optional.is_some(),

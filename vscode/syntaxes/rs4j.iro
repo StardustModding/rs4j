@@ -35,6 +35,13 @@ styles [] {
    pygments_scope        = Name.Entity
 }
 
+.real_name : style {
+   color                 = light_green
+   ace_scope             = entity.name
+   textmate_scope        = entity.name
+   pygments_scope        = Name.Entity
+}
+
 .type : style {
    color                 = gold
    ace_scope             = entity.name.type
@@ -54,6 +61,13 @@ styles [] {
    ace_scope             = punctuation
    textmate_scope        = punctuation
    pygments_scope        = Punctuation
+}
+
+.meta : style {
+   color                 = pink
+   ace_scope             = keyword
+   textmate_scope        = keyword
+   pygments_scope        = Keyword
 }
 
 .text : style {
@@ -84,6 +98,11 @@ main : context {
    }
    
    : pattern {
+      regex          \= (#into)
+      styles []       = .meta;
+   }
+   
+   : pattern {
       regex          \= $${__TYPE_KEYWORD}
       styles []       = .type;
    }
@@ -91,6 +110,11 @@ main : context {
    : pattern {
       regex          \= $${__IDENTIFIER}
       styles []       = .ident;
+   }
+   
+   : pattern {
+      regex          \= (\[$${__IDENTIFIER}\])
+      styles []       = .real_name;
    }
    
    : pattern {

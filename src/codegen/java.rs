@@ -30,12 +30,6 @@ pub fn gen_class_code(gen: &Generator, out: &PathBuf, class: ClassExpr) -> Resul
         format!("<{}>", generics)
     };
 
-    let generics_s = if generics.is_empty() {
-        String::new()
-    } else {
-        format!(" {}", generics)
-    };
-
     let annotations = if gen.with_annotations {
         "\nimport org.jetbrains.annotations.Nullable;"
     } else {
@@ -56,7 +50,7 @@ public class {name}{generics} {{\n    private long __pointer;\n\n",
 
     let suppress = "@SuppressWarnings(\"hiding\")";
 
-    for item in *class.stmts {
+    for item in *class.stmts.clone() {
         if let Expr::Function(FunctionExpr {
             args,
             is_mut: _,
@@ -67,8 +61,49 @@ public class {name}{generics} {{\n    private long __pointer;\n\n",
             rust_name: _,
             is_optional,
             is_consumed: _,
+            generics,
         }) = item
         {
+            let c_generics = class.generics();
+
+            let a_generics = if c_generics.is_empty() {
+                generics
+                    .iter()
+                    .map(|v| v.0.ident().unwrap())
+                    .collect::<Vec<_>>()
+                    .join(", ")
+            } else {
+                let g = generics
+                    .iter()
+                    .map(|v| v.0.ident().unwrap())
+                    .collect::<Vec<_>>()
+                    .join(", ");
+
+                if g.is_empty() {
+                    format!("<{}>", c_generics)
+                } else {
+                    format!("<{}, {}>", c_generics, g)
+                }
+            };
+
+            let generics_s = if a_generics.is_empty() {
+                String::new()
+            } else {
+                format!(" {}", a_generics)
+            };
+
+            let f_generics = generics
+                .iter()
+                .map(|v| v.0.ident().unwrap())
+                .collect::<Vec<_>>()
+                .join(", ");
+
+            let f_generics = if f_generics.is_empty() {
+                String::new()
+            } else {
+                format!(" <{}>", f_generics,)
+            };
+
             let ret = ret
                 .unwrap_or(Expr::Identifier(String::from("void")))
                 .ident_java()?;
@@ -82,7 +117,7 @@ public class {name}{generics} {{\n    private long __pointer;\n\n",
             let mut java_args = Vec::new();
             let mut java_args_names = Vec::new();
 
-            for (name, ty, _, _) in *args {
+            for (name, ty, _, _, _) in *args {
                 java_args.push(format!(
                     "{} {}",
                     ty.ident_java()?,
@@ -154,7 +189,7 @@ public class {name}{generics} {{\n    private long __pointer;\n\n",
                 ));
 
                 code.push_str(&format!(
-                    "    {suppress}\n    {opt}public {ret} {name}({java_args}) {{\n",
+                    "    {suppress}\n    {opt}public{f_generics} {ret} {name}({java_args}) {{\n",
                     ret = ret,
                     name = name.ident()?.to_case(Case::Camel),
                     java_args = java_args,

@@ -34,6 +34,12 @@
         </dict>
         <dict>
           <key>match</key>
+          <string>(#into)</string>
+          <key>name</key>
+          <string>keyword.rs4j</string>
+        </dict>
+        <dict>
+          <key>match</key>
           <string>\b(String|str|bool|(i|u)(8|16|32|64)|f(32|64))</string>
           <key>name</key>
           <string>entity.name.type.rs4j</string>
@@ -41,6 +47,12 @@
         <dict>
           <key>match</key>
           <string>\b([a-z_\x{0024}][\w\x{0024}]*)</string>
+          <key>name</key>
+          <string>entity.name.rs4j</string>
+        </dict>
+        <dict>
+          <key>match</key>
+          <string>(\[\b([a-z_\x{0024}][\w\x{0024}]*)\])</string>
           <key>name</key>
           <string>entity.name.rs4j</string>
         </dict>

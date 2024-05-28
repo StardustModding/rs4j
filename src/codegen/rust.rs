@@ -17,6 +17,7 @@ pub fn gen_function(
         rust_name,
         is_optional: _,
         is_consumed,
+        generics: _todo,
     }: FunctionExpr,
 ) -> Result<String> {
     let pkg = gen.jni_pkg();
@@ -31,7 +32,7 @@ pub fn gen_function(
     let mut args = Vec::new();
     let mut args_names = Vec::new();
 
-    for (name, ty, borrow, borrow_mut) in *fn_args {
+    for (name, ty, borrow, borrow_mut, into) in *fn_args {
         let borrow = if borrow_mut {
             "&mut"
         } else if borrow {
@@ -47,7 +48,11 @@ pub fn gen_function(
             ty.ident()?
         ));
 
-        args_names.push(name.ident_strict()?);
+        if into {
+            args_names.push(format!("{}.into()", name.ident_strict()?));
+        } else {
+            args_names.push(name.ident_strict()?);
+        }
     }
 
     let args = args.join(",\n    ");
