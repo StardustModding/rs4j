@@ -35,7 +35,7 @@ parser! {
             = "<" generics: ((_ t: _type() _ b: (":" _ traits: (_type() ** ",") _ { traits })? _ { (t, b) }) ** ",") ">" _ { generics }
 
         pub rule bound() -> Expr
-            = [' ' | '\t' | '\n']* _ "bound" _ name: identifier() _ "="
+            = [' ' | '\t' | '\n']* _ "bound" _ name: identifier() _ ":"
             _ traits: ([^';']+) _ ";" _
             { Expr::Bound(BoundExpr { name: Box::new(name), traits: String::from_iter(traits) }) }
 
