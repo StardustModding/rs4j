@@ -30,7 +30,7 @@ parser! {
 
         pub rule generics() -> Vec<Expr>
             = "<" generics: ((_ t: _type() _ { t }) ** ",") ">" _ { generics }
-        
+
         pub rule generics_with_bounds() -> Vec<(Expr, Option<Vec<Expr>>)>
             = "<" generics: ((_ t: _type() _ b: (":" _ traits: (_type() ** ",") _ { traits })? _ { (t, b) }) ** ",") ">" _ { generics }
 
@@ -38,6 +38,16 @@ parser! {
             = [' ' | '\t' | '\n']* _ "bound" _ name: identifier() _ ":"
             _ traits: ([^';']+) _ ";" _
             { Expr::Bound(BoundExpr { name: Box::new(name), traits: String::from_iter(traits) }) }
+
+        pub rule fn_arg() -> (Expr, Expr, bool, bool, bool)
+            = (
+                i: identifier() _ ":" _
+                into: ("#into")? _
+                borrow: ("&")? _
+                borrow_mut: ("mut")? _
+                t: _type() _
+                { (i, t, borrow.is_some(), borrow.is_some() && borrow_mut.is_some(), false) }
+            )
 
         pub rule function() -> Expr
             = [' ' | '\t' | '\n']* _ rust_name: ("[" _ rust_name: identifier() _ "]" _ { rust_name })?
@@ -49,14 +59,7 @@ parser! {
             name: identifier() _
             generics: (generics_with_bounds())? _
             "(" args: (
-                (
-                    i: identifier() _ ":" _
-                    into: ("#into")? _
-                    borrow: ("&")? _
-                    borrow_mut: ("mut")? _
-                    t: _type() _
-                    { (i, t, borrow.is_some(), borrow.is_some() && borrow_mut.is_some(), false) }
-                ) ** ","
+                fn_arg() ** ","
             ) ")" _
             ret: ("-" _ ">" _ ret: _type() _ {ret})? _
             ";" _
