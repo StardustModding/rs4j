@@ -1,3 +1,5 @@
+//! Utils for Java bindings
+
 #[allow(unused_imports)]
 use jni::sys::{
     jarray, jboolean, jbyte, jchar, jclass, jdouble, jfloat, jint, jlong, jobject, jshort, jstring,
@@ -9,18 +11,21 @@ use jni::{
     JNIEnv,
 };
 
+/// Convert a [`jlong`] to a `*mut T`
 #[cfg(target_pointer_width = "32")]
 pub unsafe fn jlong_to_pointer<T>(val: jlong) -> *mut T {
     (val as u32) as *mut T
 }
 
+/// Convert a [`jlong`] to a `*mut T`
 #[cfg(target_pointer_width = "64")]
 pub unsafe fn jlong_to_pointer<T>(val: jlong) -> *mut T {
     val as *mut T
 }
 
+/// Convert an object (`T`) to a [`jobject`]
 #[allow(dead_code)]
-fn object_to_jobject<T>(env: *mut JNIEnv, obj: T, jcls: String) -> jobject {
+pub fn object_to_jobject<T>(env: *mut JNIEnv, obj: T, jcls: String) -> jobject {
     let jobj: JObject = unsafe { (*env).alloc_object(jcls).unwrap() };
 
     assert!(!jobj.is_null(), "object_to_jobject: AllocObject failed");

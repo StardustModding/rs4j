@@ -1,8 +1,11 @@
+//! Rust codegen.
+
 use crate::parser::{class::ClassExpr, expr::Expr, func::FunctionExpr};
 use anyhow::Result;
 
 use super::gen::Generator;
 
+/// Generate Rust code for a [`FunctionExpr`].
 pub fn gen_function(
     gen: &Generator,
     class: &ClassExpr,

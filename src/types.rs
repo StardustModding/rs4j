@@ -1,4 +1,8 @@
+//! Type conversions to Java
+
+/// A trait for things that can be converted into Java types.
 pub trait IntoJavaType {
+    /// Convert this into a [`String`] (java type)
     fn into_java_type(&self) -> String;
 }
 
@@ -22,24 +26,55 @@ macro_rules! from_type {
     };
 }
 
+/// An enum for Rust types.
 #[derive(Debug, Clone, PartialEq, PartialOrd, Default)]
 pub enum RustTypes {
+    /// A [`String`].
     String(String),
+
+    /// A [`bool`].
     Bool(bool),
+
+    /// A [`u8`].
     Uint8(u8),
+
+    /// A [`u16`].
     Uint16(u16),
+
+    /// A [`u32`].
     Uint32(u32),
+
+    /// A [`u64`].
     Uint64(u64),
+
+    /// A [`u128`].
     Uint128(u128),
+
+    /// An [`i8`].
     Int8(i8),
+
+    /// An [`i16`].
     Int16(i16),
+
+    /// An [`i32`].
     Int32(i32),
+
+    /// An [`i64`].
     Int64(i64),
+
+    /// An [`i128`].
     Int128(i128),
+
+    /// A [`f32`].
     Float32(f32),
+
+    /// A [`f64`].
     Float64(f64),
+
+    /// A catch-all, with the type name as a [`String`].
     Other(String),
 
+    /// A void type ([`unit`](https://doc.rust-lang.org/std/primitive.unit.html)).
     #[default]
     Void,
 }

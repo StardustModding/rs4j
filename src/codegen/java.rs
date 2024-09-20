@@ -1,3 +1,5 @@
+//! Java codegen.
+
 use std::{
     fs::{create_dir_all, File},
     io::Write,
@@ -11,6 +13,7 @@ use crate::parser::{class::ClassExpr, expr::Expr, func::FunctionExpr};
 
 use super::gen::Generator;
 
+/// Generate the Java code for an entire `.rs4j` file.
 pub fn gen_java_code(gen: Generator, exprs: Vec<Expr>, out: PathBuf) -> Result<()> {
     for item in exprs {
         if let Expr::Class(class) = item {
@@ -21,6 +24,7 @@ pub fn gen_java_code(gen: Generator, exprs: Vec<Expr>, out: PathBuf) -> Result<(
     Ok(())
 }
 
+/// Generate Java code for a [`ClassExpr`].
 pub fn gen_class_code(gen: &Generator, out: &PathBuf, class: ClassExpr) -> Result<()> {
     let generics = class.generics();
 

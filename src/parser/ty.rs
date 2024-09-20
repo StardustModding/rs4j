@@ -1,9 +1,12 @@
+//! The module for [`TypeExpr`]s.
+
 use anyhow::Result;
 
 use crate::types::{IntoJavaType, RustTypes};
 
 use super::expr::Expr;
 
+/// A type (with optional generics).
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Default, Hash)]
 pub struct TypeExpr {
     /// The type's ID.
@@ -14,6 +17,7 @@ pub struct TypeExpr {
 }
 
 impl TypeExpr {
+    /// Get this as a Java type.
     pub fn as_java(&self) -> Result<String> {
         let ident = self.id.ident_strict()?;
         let java_type = RustTypes::from(ident.as_str()).into_java_type();

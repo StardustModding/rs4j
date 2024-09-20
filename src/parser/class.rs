@@ -1,7 +1,10 @@
+//! The module for [`ClassExpr`]s.
+
 use anyhow::Result;
 
 use super::{bound::BoundExpr, expr::Expr};
 
+/// A class.
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Default, Hash)]
 pub struct ClassExpr {
     /// The name of the class.
@@ -18,6 +21,7 @@ pub struct ClassExpr {
 }
 
 impl ClassExpr {
+    /// Get the name/ident of this class as a [`String`].
     pub fn ident(&self) -> Result<String> {
         let ident = self.name.ident()?;
 
@@ -34,6 +38,7 @@ impl ClassExpr {
         }
     }
 
+    /// Get the name/ident of this class for Rust as a [`String`].
     pub fn ident_rust(&self) -> Result<String> {
         let mut id = self.real_name.0.ident()?;
 
@@ -50,6 +55,7 @@ impl ClassExpr {
         Ok(id)
     }
 
+    /// Get the generics for this class.
     pub fn generics(&self) -> String {
         if let Some(generics) = *self.generics.clone() {
             let generics = generics
@@ -64,6 +70,7 @@ impl ClassExpr {
         }
     }
 
+    /// Get the type bounds for this class.
     pub fn bounds(&self) -> Result<String> {
         let mut bounds = String::new();
 

@@ -1,5 +1,8 @@
+//! The module for [`FunctionExpr`]s.
+
 use super::expr::Expr;
 
+/// A function.
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Default, Hash)]
 pub struct FunctionExpr {
     /// The original struct the function belongs to.

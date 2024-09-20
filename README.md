@@ -19,6 +19,12 @@ You can add the package to your build script by running:
 cargo add rs4j --build
 ```
 
+You will also need to make sure you have the `jni` dependency installed:
+
+```sh
+cargo add jni
+```
+
 Here's an example `build.rs`:
 
 ```rust

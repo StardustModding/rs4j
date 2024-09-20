@@ -1,3 +1,5 @@
+//! Functions for buildscripts
+
 use std::{fs, path::PathBuf};
 
 use anyhow::Result;
@@ -10,6 +12,7 @@ use crate::{
     parser::parser::classes,
 };
 
+/// The build config.
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct BindgenConfig {
     /// The Java package to generate bindings for.
@@ -29,6 +32,7 @@ pub struct BindgenConfig {
 }
 
 impl BindgenConfig {
+    /// Create a new [`BindgenConfig`]
     pub fn new() -> BindgenConfig {
         BindgenConfig {
             package: String::new(),
@@ -39,6 +43,7 @@ impl BindgenConfig {
         }
     }
 
+    /// Set the Java bindings output directory.
     pub fn output<T>(&mut self, val: T) -> Self
     where
         T: Into<PathBuf>,
@@ -47,6 +52,7 @@ impl BindgenConfig {
         self.clone()
     }
 
+    /// Set the Rust bindings output file.
     pub fn bindings<T>(&mut self, val: T) -> Self
     where
         T: Into<PathBuf>,
@@ -55,6 +61,7 @@ impl BindgenConfig {
         self.clone()
     }
 
+    /// Set the package name to generate as.
     pub fn package<T>(&mut self, val: T) -> Self
     where
         T: AsRef<str>,
@@ -63,6 +70,7 @@ impl BindgenConfig {
         self.clone()
     }
 
+    /// Alias to [`Self::package`]
     pub fn pkg<T>(&mut self, val: T) -> Self
     where
         T: AsRef<str>,
@@ -70,6 +78,7 @@ impl BindgenConfig {
         self.package(val)
     }
 
+    /// Add a `.rs4j` file to the config.
     pub fn file<T>(&mut self, val: T) -> Self
     where
         T: Into<PathBuf>,
@@ -78,6 +87,7 @@ impl BindgenConfig {
         self.clone()
     }
 
+    /// Add a list of `.rs4j` files to the config.
     pub fn files<T>(&mut self, val: Vec<T>) -> Self
     where
         T: Into<PathBuf>,
@@ -89,6 +99,7 @@ impl BindgenConfig {
         self.clone()
     }
 
+    /// Add `.rs4j` files to the config via globbing for them.
     pub fn glob<T>(&mut self, val: T) -> Result<Self>
     where
         T: AsRef<str>,
@@ -102,11 +113,13 @@ impl BindgenConfig {
         Ok(self.clone())
     }
 
+    /// Enable/disable JetBrains annotations.
     pub fn annotations(&mut self, val: bool) -> Self {
         self.annotations = val;
         self.clone()
     }
 
+    /// Generate bindings.
     pub fn generate(&self) -> Result<()> {
         equals_throw!(
             self.files,

@@ -1,3 +1,5 @@
+//! rs4j's custom language parser.
+
 pub mod bound;
 pub mod class;
 pub mod expr;
