@@ -94,7 +94,7 @@ class Thing<A> {
 
     // This gets the value. Since this is in snake_case, rs4j will
     // automatically convert it into camelCase, renaming this to
-    // `get_value` on the Java side.
+    // `getValue` on the Java side.
     fn get_value() -> A;
 
     // This marks this function as mutable, meaning in Rust it will
