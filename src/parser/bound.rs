@@ -13,10 +13,6 @@ pub struct BoundExpr {
 
 impl BoundExpr {
     pub fn bounds(&self) -> Result<String> {
-        Ok(format!(
-            "{}: {}",
-            self.name.ident_strict()?,
-            self.traits,
-        ))
+        Ok(format!("{}: {}", self.name.ident_strict()?, self.traits,))
     }
 }

@@ -41,14 +41,13 @@ pub fn gen_class_code(gen: &Generator, out: &PathBuf, class: ClassExpr) -> Resul
 
 import java.util.*;{annotations}
 
+@SuppressWarnings(\"hiding\")
 public class {name}{generics} {{\n    private long __pointer;\n\n",
         pkg = gen.package,
         name = class.name.ident()?,
         generics = generics,
         annotations = annotations,
     );
-
-    let suppress = "@SuppressWarnings(\"hiding\")";
 
     for item in *class.stmts.clone() {
         if let Expr::Function(FunctionExpr {
@@ -132,22 +131,20 @@ public class {name}{generics} {{\n    private long __pointer;\n\n",
 
             if is_static {
                 code.push_str(&format!(
-                    "    {suppress}\n    {opt}private static native{generics_s} {ret} jni_{name}({java_args});\n\n",
+                    "    {opt}private static native{generics_s} {ret} jni_{name}({java_args});\n\n",
                     ret = ret,
                     name = name.ident()?,
                     java_args = java_args,
                     generics_s = generics_s,
-                    suppress = suppress,
                     opt = opt,
                 ));
 
                 code.push_str(&format!(
-                    "    {suppress}\n    {opt}public static{generics_s} {ret} {name}({java_args}) {{\n",
+                    "    {opt}public static{generics_s} {ret} {name}({java_args}) {{\n",
                     ret = ret,
                     name = name.ident()?.to_case(Case::Camel),
                     java_args = java_args,
                     generics_s = generics_s,
-                    suppress = suppress,
                     opt = opt,
                 ));
 
@@ -179,21 +176,19 @@ public class {name}{generics} {{\n    private long __pointer;\n\n",
                 };
 
                 code.push_str(&format!(
-                    "    {suppress}\n    {opt}private native{generics_s} {ret} jni_{name}(long pointer{java_args});\n\n",
+                    "    {opt}private native{generics_s} {ret} jni_{name}(long pointer{java_args});\n\n",
                     ret = ret,
                     name = name.ident()?,
                     java_args = java_args_native,
                     generics_s = generics_s,
-                    suppress = suppress,
                     opt = opt,
                 ));
 
                 code.push_str(&format!(
-                    "    {suppress}\n    {opt}public{f_generics} {ret} {name}({java_args}) {{\n",
+                    "    {opt}public{f_generics} {ret} {name}({java_args}) {{\n",
                     ret = ret,
                     name = name.ident()?.to_case(Case::Camel),
                     java_args = java_args,
-                    suppress = suppress,
                     opt = opt,
                 ));
 
