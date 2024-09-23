@@ -26,7 +26,6 @@ pub fn gen_function(
     let pkg = gen.jni_pkg();
     let fn_name_id = name.ident()?;
     let fn_name = format!("Java_{}_{}_jni_1{}", pkg, class.name.ident()?, fn_name_id);
-    let raw_cname = format!("{}.{}", gen.package, class.name.ident()?).replace(".", "/");
     let rust_fn_name = rust_name.unwrap_or(Expr::Identifier(fn_name_id)).ident()?;
     let src = source.unwrap_or(class.real_name.clone().0).ident()?;
     let cname = class.ident_rust()?;
@@ -89,53 +88,30 @@ pub fn gen_function(
     improper_ctypes_definitions,
     no_mangle_generic_items,
     deprecated,
+    missing_docs,
 )]";
 
     let code = if is_static {
-        format!(
-            "{function_head}
+        format!("{function_head}
 pub unsafe extern \"system\" fn {fn_name}<'local{generics}>(
     mut env: JNIEnv<'local>,
     class: objects::JClass<'local>{args}
-) -> jobject{bounds} {{
-    object_to_jobject(env, {src}::{rust_fn_name}({args_names}), \"{raw_cname}\".to_string())
-}}",
-            fn_name = fn_name,
-            generics = generics,
-            bounds = bounds,
-            rust_fn_name = rust_fn_name,
-            function_head = function_head,
-            src = src,
-            args = args,
-            args_names = args_names,
-            raw_cname = raw_cname,
-        )
+) -> jlong{bounds} {{
+    {src}::{rust_fn_name}({args_names}).as_java_ptr() as u64 as i64
+}}")
     } else {
         if is_mut {
-            format!(
-                "{function_head}
+            format!("{function_head}
 pub unsafe extern \"system\" fn {fn_name}<'local{generics}>(
     mut env: JNIEnv<'local>,
     class: objects::JClass<'local>,
     this: jlong{args}
-) -> jobject{bounds} {{
+) -> jlong{bounds} {{
     let this: &mut {cname} = jlong_to_pointer::<{cname}>(this).as_mut().unwrap();
-    object_to_jobject(env, {src}::{rust_fn_name}(this{args_names}), \"{raw_cname}\".to_string())
-}}",
-                fn_name = fn_name,
-                cname = cname,
-                generics = generics,
-                bounds = bounds,
-                rust_fn_name = rust_fn_name,
-                function_head = function_head,
-                src = src,
-                args = args,
-                args_names = args_names,
-                raw_cname = raw_cname,
-            )
+    {src}::{rust_fn_name}(this{args_names}).as_java_ptr() as u64 as i64
+}}")
         } else if is_consumed {
-            format!(
-                "{function_head}
+            format!("{function_head}
 pub unsafe extern \"system\" fn {fn_name}<'local{generics}>(
     mut env: JNIEnv<'local>,
     class: objects::JClass<'local>,
@@ -143,41 +119,18 @@ pub unsafe extern \"system\" fn {fn_name}<'local{generics}>(
 ) -> jobject{bounds} {{
     let this: &{cname} = jlong_to_pointer::<{cname}>(this).as_mut().unwrap();
     let this = this.clone();
-    object_to_jobject(env, {src}::{rust_fn_name}(this{args_names}), \"{raw_cname}\".to_string())
-}}",
-                fn_name = fn_name,
-                cname = cname,
-                generics = generics,
-                bounds = bounds,
-                rust_fn_name = rust_fn_name,
-                function_head = function_head,
-                src = src,
-                args = args,
-                args_names = args_names,
-                raw_cname = raw_cname,
-            )
+    {src}::{rust_fn_name}(this{args_names}).as_java_ptr() as u64 as i64
+}}")
         } else {
-            format!(
-                "{function_head}
+            format!("{function_head}
 pub unsafe extern \"system\" fn {fn_name}<'local{generics}>(
     mut env: JNIEnv<'local>,
     class: objects::JClass<'local>,
     this: jlong{args}
 ) -> jobject{bounds} {{
     let this: &{cname} = jlong_to_pointer::<{cname}>(this).as_mut().unwrap();
-    object_to_jobject(env, {src}::{rust_fn_name}(this{args_names}), \"{raw_cname}\".to_string())
-}}",
-                fn_name = fn_name,
-                cname = cname,
-                generics = generics,
-                bounds = bounds,
-                rust_fn_name = rust_fn_name,
-                function_head = function_head,
-                src = src,
-                args = args,
-                args_names = args_names,
-                raw_cname = raw_cname,
-            )
+    {src}::{rust_fn_name}(this{args_names}).as_java_ptr() as u64 as i64
+}}")
         }
     };
 

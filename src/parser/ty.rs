@@ -37,4 +37,21 @@ impl TypeExpr {
             Ok(java_type)
         }
     }
+
+    /// Get the conversion method
+    pub fn conv_method(&self) -> Result<&'static str> {
+        Ok(match self.id.ident()?.as_str() {
+            "String" => "NativeTools.getString",
+            "i8" | "u8" => "NativeTools.getByte",
+            "i16" | "u16" => "NativeTools.getShort",
+            "i32" | "u32" => "NativeTools.getInt",
+            "i64" | "u64" => "NativeTools.getLong",
+            "f32" => "NativeTools.getFloat",
+            "f64" => "NativeTools.getDouble",
+            "bool" => "NativeTools.getBool",
+            "char" => "NativeTools.getChar",
+
+            id => return Err(anyhow!("Unknown type: {}", id)),
+        })
+    }
 }

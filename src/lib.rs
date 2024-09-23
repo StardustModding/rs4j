@@ -10,6 +10,7 @@ pub extern crate anyhow;
 #[cfg(feature = "build")]
 pub mod build;
 
+pub mod base;
 pub mod codegen;
 pub mod conv;
 pub mod generate;
@@ -22,6 +23,7 @@ pub mod types;
 pub mod prelude {
     //! Base types.
 
+    pub use super::base::*;
     pub use super::conv::*;
     pub use super::include::*;
     pub use super::types::*;

@@ -12,6 +12,8 @@ use crate::{
 
 use super::gen::Generator;
 
+const NATIVE_TOOLS: &str = include_str!("../NativeTools.java");
+
 /// Generate the Java code for an entire `.rs4j` file.
 pub fn gen_java_code(gen: Generator, exprs: Vec<Expr>, out: PathBuf) -> Result<()> {
     for item in exprs {
@@ -38,6 +40,15 @@ pub fn gen_java_code(gen: Generator, exprs: Vec<Expr>, out: PathBuf) -> Result<(
 
     fs::write(path, NATIVE_UTILS)?;
 
+    let dir = out.join("java/src/org/stardustmodding/rs4j/util");
+    let path = dir.join("NativeTools.java");
+
+    if !dir.exists() {
+        fs::create_dir_all(dir)?;
+    }
+
+    fs::write(path, NATIVE_TOOLS)?;
+
     Ok(())
 }
 
@@ -60,7 +71,8 @@ pub fn gen_class_code(gen: &Generator, out: &PathBuf, class: ClassExpr) -> Resul
     let mut code = format!(
         "package {pkg};
 
-import java.util.*;{annotations}
+import java.util.*;
+import org.stardustmodding.rs4j.util.NativeTools;{annotations}
 
 @SuppressWarnings(\"hiding\")
 public class {name}{generics} {{\n    private long __pointer;\n\n",
@@ -124,9 +136,8 @@ public class {name}{generics} {{\n    private long __pointer;\n\n",
                 format!(" <{}>", f_generics,)
             };
 
-            let ret = ret
-                .unwrap_or(Expr::Identifier(String::from("void")))
-                .ident_java()?;
+            let ret = ret.unwrap_or(Expr::Identifier(String::from("void")));
+            let ret_t = ret.ident_java()?;
 
             let opt = if is_optional && gen.with_annotations {
                 "@Nullable\n    "
@@ -152,36 +163,31 @@ public class {name}{generics} {{\n    private long __pointer;\n\n",
 
             if is_static {
                 code.push_str(&format!(
-                    "    {opt}private static native{generics_s} {ret} jni_{name}({java_args});\n\n",
-                    ret = ret,
+                    "    {opt}private static native{generics_s} long jni_{name}({java_args});\n\n",
                     name = name.ident()?,
-                    java_args = java_args,
-                    generics_s = generics_s,
-                    opt = opt,
                 ));
 
                 code.push_str(&format!(
-                    "    {opt}public static{generics_s} {ret} {name}({java_args}) {{\n",
-                    ret = ret,
+                    "    {opt}public static{generics_s} {ret_t} {name}({java_args}) {{\n",
                     name = name.ident()?.to_case(Case::Camel),
-                    java_args = java_args,
-                    generics_s = generics_s,
-                    opt = opt,
                 ));
 
-                if ret == "void" {
+                if ret_t == "void" {
                     code.push_str(&format!(
                         "        {cname}.jni_{name}({java_args_names});\n    }}\n\n",
                         name = name.ident()?,
                         cname = class.name.ident()?,
-                        java_args_names = java_args_names,
                     ));
                 } else {
                     code.push_str(&format!(
-                        "        return {cname}.jni_{name}({java_args_names});\n    }}\n\n",
+                        "        long val = {cname}.jni_{name}({java_args_names});\n",
                         name = name.ident()?,
                         cname = class.name.ident()?,
-                        java_args_names = java_args_names,
+                    ));
+
+                    code.push_str(&format!(
+                        "        return {}(val);\n    }}\n\n",
+                        ret.get_type()?.conv_method()?,
                     ));
                 }
             } else {
@@ -190,6 +196,7 @@ public class {name}{generics} {{\n    private long __pointer;\n\n",
                 } else {
                     java_args_names
                 };
+
                 let java_args_native = if java_args.len() > 0 {
                     format!(", {}", java_args)
                 } else {
@@ -197,33 +204,30 @@ public class {name}{generics} {{\n    private long __pointer;\n\n",
                 };
 
                 code.push_str(&format!(
-                    "    {opt}private native{generics_s} {ret} jni_{name}(long pointer{java_args});\n\n",
-                    ret = ret,
+                    "    {opt}private native{generics_s} long jni_{name}(long pointer{java_args});\n\n",
                     name = name.ident()?,
                     java_args = java_args_native,
-                    generics_s = generics_s,
-                    opt = opt,
                 ));
 
                 code.push_str(&format!(
-                    "    {opt}public{f_generics} {ret} {name}({java_args}) {{\n",
-                    ret = ret,
+                    "    {opt}public{f_generics} {ret_t} {name}({java_args}) {{\n",
                     name = name.ident()?.to_case(Case::Camel),
-                    java_args = java_args,
-                    opt = opt,
                 ));
 
-                if ret == "void" {
+                if ret_t == "void" {
                     code.push_str(&format!(
                         "        this.jni_{name}(this.__pointer{java_args_names});\n    }}\n\n",
                         name = name.ident()?,
-                        java_args_names = java_args_names,
                     ));
                 } else {
                     code.push_str(&format!(
-                        "        return this.jni_{name}(this.__pointer{java_args_names});\n    }}\n\n",
+                        "        long val = this.jni_{name}(this.__pointer{java_args_names});\n",
                         name = name.ident()?,
-                        java_args_names = java_args_names,
+                    ));
+
+                    code.push_str(&format!(
+                        "        return {}(val);\n    }}\n\n",
+                        ret.get_type()?.conv_method()?,
                     ));
                 }
             }

@@ -9,11 +9,12 @@ use rs4j::prelude::*;
     improper_ctypes_definitions,
     no_mangle_generic_items,
     deprecated,
+    missing_docs,
 )]
 pub unsafe extern "system" fn Java_com_example_HelloWorld_jni_1hello<'local>(
     mut env: JNIEnv<'local>,
     class: objects::JClass<'local>
-) -> jobject {
-    object_to_jobject(env, HelloWorld::hello(), "com/example/HelloWorld".to_string())
+) -> jlong {
+    HelloWorld::hello().as_java_ptr() as u64 as i64
 }
 

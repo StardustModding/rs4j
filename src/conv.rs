@@ -1,46 +1,51 @@
 //! Internal conversions
 
-/// A trait for objects that convert into [`jobject`]s.
+/// A trait for objects that convert into pointers for Java.
 pub trait AsJava<'a> {
-    /// Convert into a [`jobject`].
-    fn as_java(self, env: jni::JNIEnv<'a>) -> jni::sys::jobject;
+    /// Convert into a pointer.
+    fn as_java_ptr(self) -> *const Self;
+
+    /// Get the function associated with getting this type.
+    fn java_fn(&self) -> String;
 }
 
 impl<'a> AsJava<'a> for String {
-    fn as_java(self, env: jni::JNIEnv<'a>) -> jni::sys::jobject {
-        env.new_string(self).unwrap().as_raw()
+    fn as_java_ptr(self) -> *const Self {
+        Box::into_raw(Box::new(self))
     }
-}
 
-impl<'a> AsJava<'a> for &str {
-    fn as_java(self, env: jni::JNIEnv<'a>) -> jni::sys::jobject {
-        env.new_string(self.to_string()).unwrap().as_raw()
+    fn java_fn(&self) -> String {
+        "NativeTools.getString".into()
     }
 }
 
 macro_rules! conversion {
-    ($ty: ty => $other: ident) => {
+    ($ty: ty => $other: ident: $func: ident) => {
         impl<'a> AsJava<'a> for $ty {
-            fn as_java(self, _env: jni::JNIEnv<'a>) -> jni::sys::jobject {
-                self as jni::sys::$other as jni::sys::jobject
+            fn as_java_ptr(self) -> *const Self {
+                Box::into_raw(Box::new(self))
+            }
+
+            fn java_fn(&self) -> String {
+                format!("NativeTools.{}", stringify!($func))
             }
         }
     };
 }
 
-conversion!(u8 => jbyte);
-conversion!(u16 => jshort);
-conversion!(u32 => jint);
-conversion!(u64 => jlong);
-conversion!(i8 => jbyte);
-conversion!(i16 => jshort);
-conversion!(i32 => jint);
-conversion!(i64 => jlong);
-conversion!(char => jchar);
-conversion!(bool => jboolean);
+conversion!(u8 => jbyte: getByte);
+conversion!(u16 => jshort: getShort);
+conversion!(u32 => jint: getInt);
+conversion!(u64 => jlong: getLong);
+conversion!(i8 => jbyte: getByte);
+conversion!(i16 => jshort: getShort);
+conversion!(i32 => jint: getInt);
+conversion!(i64 => jlong: getLong);
+conversion!(char => jchar: getChar);
+conversion!(bool => jboolean: getBool);
+conversion!(f32 => jfloat: getFloat);
+conversion!(f64 => jdouble: getDouble);
 
 // TODO
-// conversion!(f32 => jfloat);
-// conversion!(f64 => jdouble);
 // conversion!(u128 => jbigint);
 // conversion!(i128 => jbigint);

@@ -1,11 +1,6 @@
 //! Utils for Java bindings
 
-use jni::{
-    sys::{jlong, jobject},
-    JNIEnv,
-};
-
-use crate::conv::AsJava;
+use jni::sys::jlong;
 
 /// Convert a [`jlong`] to a `*mut T`
 #[cfg(target_pointer_width = "32")]
@@ -35,9 +30,3 @@ pub unsafe fn jlong_to_pointer<T>(val: jlong) -> *mut T {
 
 //     jobj.as_raw()
 // }
-
-/// Convert an object (`T`) to a [`jobject`]
-#[allow(dead_code)]
-pub fn object_to_jobject<'a, T: AsJava<'a>>(env: JNIEnv<'a>, obj: T, _jcls: String) -> jobject {
-    obj.as_java(env)
-}
