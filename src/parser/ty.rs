@@ -51,7 +51,7 @@ impl TypeExpr {
             "bool" => "NativeTools.getBool",
             "char" => "NativeTools.getChar",
 
-            id => return Err(anyhow!("Unknown type: {}", id)),
+            _ => "NativeTools.getObject",
         })
     }
 }

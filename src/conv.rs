@@ -1,19 +1,24 @@
 //! Internal conversions
 
-/// A trait for objects that convert into pointers for Java.
+/// A trait for objects that convert into Java types.
 pub trait AsJava<'a> {
-    /// Convert into a pointer.
-    fn as_java_ptr(self) -> *const Self;
-
     /// Get the function associated with getting this type.
     fn java_fn(&self) -> String;
 }
 
-impl<'a> AsJava<'a> for String {
+/// A trait for objects that convert into a Java pointer.
+pub trait AsJavaPtr {
+    /// Convert into a pointer.
+    fn as_java_ptr(self) -> *const Self;
+}
+
+impl<T> AsJavaPtr for T {
     fn as_java_ptr(self) -> *const Self {
         Box::into_raw(Box::new(self))
     }
+}
 
+impl<'a> AsJava<'a> for String {
     fn java_fn(&self) -> String {
         "NativeTools.getString".into()
     }
@@ -22,10 +27,6 @@ impl<'a> AsJava<'a> for String {
 macro_rules! conversion {
     ($ty: ty => $other: ident: $func: ident) => {
         impl<'a> AsJava<'a> for $ty {
-            fn as_java_ptr(self) -> *const Self {
-                Box::into_raw(Box::new(self))
-            }
-
             fn java_fn(&self) -> String {
                 format!("NativeTools.{}", stringify!($func))
             }

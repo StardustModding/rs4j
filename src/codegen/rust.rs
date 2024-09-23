@@ -116,7 +116,7 @@ pub unsafe extern \"system\" fn {fn_name}<'local{generics}>(
     mut env: JNIEnv<'local>,
     class: objects::JClass<'local>,
     this: jlong{args}
-) -> jobject{bounds} {{
+) -> jlong{bounds} {{
     let this: &{cname} = jlong_to_pointer::<{cname}>(this).as_mut().unwrap();
     let this = this.clone();
     {src}::{rust_fn_name}(this{args_names}).as_java_ptr() as u64 as i64
@@ -127,7 +127,7 @@ pub unsafe extern \"system\" fn {fn_name}<'local{generics}>(
     mut env: JNIEnv<'local>,
     class: objects::JClass<'local>,
     this: jlong{args}
-) -> jobject{bounds} {{
+) -> jlong{bounds} {{
     let this: &{cname} = jlong_to_pointer::<{cname}>(this).as_mut().unwrap();
     {src}::{rust_fn_name}(this{args_names}).as_java_ptr() as u64 as i64
 }}")
