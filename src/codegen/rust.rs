@@ -25,7 +25,7 @@ pub fn gen_function(
 ) -> Result<String> {
     let pkg = gen.jni_pkg();
     let fn_name_id = name.ident()?;
-    let fn_name = format!("Java_{}_{}_jni_{}", pkg, class.name.ident()?, fn_name_id);
+    let fn_name = format!("Java_{}_{}_jni_1{}", pkg, class.name.ident()?, fn_name_id);
     let raw_cname = format!("{}.{}", gen.package, class.name.ident()?).replace(".", "/");
     let rust_fn_name = rust_name.unwrap_or(Expr::Identifier(fn_name_id)).ident()?;
     let src = source.unwrap_or(class.real_name.clone().0).ident()?;
@@ -95,7 +95,7 @@ pub fn gen_function(
         format!(
             "{function_head}
 pub unsafe extern \"system\" fn {fn_name}<'local{generics}>(
-    mut env: *mut jni::JNIEnv<'local>,
+    mut env: jni::JNIEnv<'local>,
     class: jni::objects::JClass<'local>{args}
 ) -> jobject{bounds} {{
     object_to_jobject(env, {src}::{rust_fn_name}({args_names}), \"{raw_cname}\".to_string())
@@ -115,7 +115,7 @@ pub unsafe extern \"system\" fn {fn_name}<'local{generics}>(
             format!(
                 "{function_head}
 pub unsafe extern \"system\" fn {fn_name}<'local{generics}>(
-    mut env: *mut jni::JNIEnv<'local>,
+    mut env: jni::JNIEnv<'local>,
     class: jni::objects::JClass<'local>,
     this: jlong{args}
 ) -> jobject{bounds} {{
@@ -137,7 +137,7 @@ pub unsafe extern \"system\" fn {fn_name}<'local{generics}>(
             format!(
                 "{function_head}
 pub unsafe extern \"system\" fn {fn_name}<'local{generics}>(
-    mut env: *mut jni::JNIEnv<'local>,
+    mut env: jni::JNIEnv<'local>,
     class: jni::objects::JClass<'local>,
     this: jlong{args}
 ) -> jobject{bounds} {{
@@ -160,7 +160,7 @@ pub unsafe extern \"system\" fn {fn_name}<'local{generics}>(
             format!(
                 "{function_head}
 pub unsafe extern \"system\" fn {fn_name}<'local{generics}>(
-    mut env: *mut jni::JNIEnv<'local>,
+    mut env: jni::JNIEnv<'local>,
     class: jni::objects::JClass<'local>,
     this: jlong{args}
 ) -> jobject{bounds} {{

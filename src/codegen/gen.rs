@@ -14,6 +14,9 @@ pub struct Generator {
 
     /// Whether to use JetBrains annotations.
     pub with_annotations: bool,
+
+    /// The library file base name.
+    pub library: String,
 }
 
 impl Generator {

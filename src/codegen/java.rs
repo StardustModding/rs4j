@@ -1,15 +1,14 @@
 //! Java codegen.
 
-use std::{
-    fs::{create_dir_all, File},
-    io::Write,
-    path::PathBuf,
-};
+use std::{fs, path::PathBuf};
 
 use anyhow::Result;
 use convert_case::{Case, Casing};
 
-use crate::parser::{class::ClassExpr, expr::Expr, func::FunctionExpr};
+use crate::{
+    loader::{generate_loader, NATIVE_UTILS},
+    parser::{class::ClassExpr, expr::Expr, func::FunctionExpr},
+};
 
 use super::gen::Generator;
 
@@ -20,6 +19,24 @@ pub fn gen_java_code(gen: Generator, exprs: Vec<Expr>, out: PathBuf) -> Result<(
             gen_class_code(&gen, &out, class)?;
         }
     }
+
+    let dir = out.join("java/src").join(gen.dir_pkg());
+    let path = dir.join("NativeLoader.java");
+
+    if !dir.exists() {
+        fs::create_dir_all(dir)?;
+    }
+
+    fs::write(path, generate_loader(gen.package, gen.library))?;
+
+    let dir = out.join("java/src/cz/adamh/utils");
+    let path = dir.join("NativeUtils.java");
+
+    if !dir.exists() {
+        fs::create_dir_all(dir)?;
+    }
+
+    fs::write(path, NATIVE_UTILS)?;
 
     Ok(())
 }
@@ -215,16 +232,14 @@ public class {name}{generics} {{\n    private long __pointer;\n\n",
 
     code.push_str("}\n");
 
-    let dir = out.join(gen.dir_pkg());
+    let dir = out.join("java/src").join(gen.dir_pkg());
     let path = dir.join(format!("{}.java", class.name.ident()?));
 
     if !dir.exists() {
-        create_dir_all(dir)?;
+        fs::create_dir_all(dir)?;
     }
 
-    let mut file = File::create(path)?;
-
-    file.write_all(code.as_bytes())?;
+    fs::write(path, code)?;
 
     Ok(())
 }

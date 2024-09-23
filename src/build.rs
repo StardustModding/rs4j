@@ -1,6 +1,6 @@
 //! Functions for buildscripts
 
-use std::{fs, path::PathBuf};
+use std::{env, fs, path::PathBuf};
 
 use anyhow::Result;
 use glob::glob;
@@ -145,6 +145,7 @@ impl BindgenConfig {
         let gen = Generator {
             package: self.package.clone(),
             with_annotations: self.annotations,
+            library: env::var("CARGO_PKG_NAME")?,
         };
 
         let mut exprs = Vec::new();
@@ -156,7 +157,23 @@ impl BindgenConfig {
         }
 
         gen_code(gen.clone(), exprs.clone(), self.bindings.clone())?;
-        gen_java_code(gen, exprs, self.output.clone())?;
+        gen_java_code(gen.clone(), exprs, self.output.clone())?;
+
+        let res = self.output.clone().join("resources");
+
+        if !res.exists() {
+            fs::create_dir_all(&res)?;
+        }
+
+        let dir = env::var("OUT_DIR")?;
+        let target_dir = PathBuf::from(dir).join("../../..").canonicalize()?;
+        let target = env::var("TARGET")?;
+        let out_name = format!("{}-{}.so", gen.library, target);
+        let out_path = res.join(out_name);
+        let in_name = format!("lib{}.so", gen.library);
+        let in_path = target_dir.join(in_name);
+
+        fs::copy(in_path, out_path)?;
 
         Ok(())
     }
