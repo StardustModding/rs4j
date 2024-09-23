@@ -7,7 +7,9 @@ extern crate peg;
 #[macro_use]
 pub extern crate anyhow;
 
+#[cfg(feature = "build")]
 pub mod build;
+
 pub mod codegen;
 pub mod conv;
 pub mod generate;
@@ -16,3 +18,16 @@ pub mod loader;
 pub mod macros;
 pub mod parser;
 pub mod types;
+
+pub mod prelude {
+    //! Base types.
+
+    pub use super::conv::*;
+    pub use super::include::*;
+    pub use super::types::*;
+    pub use jni::sys::{
+        jarray, jboolean, jbyte, jchar, jclass, jdouble, jfloat, jint, jlong, jobject, jshort,
+        jstring, jvalue,
+    };
+    pub use jni::*;
+}

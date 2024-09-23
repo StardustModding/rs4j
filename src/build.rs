@@ -1,9 +1,10 @@
-//! Functions for buildscripts
+//! Functions for build scripts
 
 use std::{env, fs, path::PathBuf};
 
 use anyhow::Result;
 use glob::glob;
+use regex::Regex;
 
 use crate::{
     codegen::{gen::Generator, java::gen_java_code},
@@ -120,7 +121,7 @@ impl BindgenConfig {
     }
 
     /// Generate bindings.
-    pub fn generate(&self) -> Result<()> {
+    pub fn generate(self) -> Result<Self> {
         equals_throw!(
             self.files,
             Vec::<PathBuf>::new(),
@@ -138,7 +139,31 @@ impl BindgenConfig {
             "Output file must be specified!"
         );
 
-        self.generate_bindings()
+        self.generate_bindings()?;
+        Ok(self)
+    }
+
+    /// Copy resources.
+    pub fn post_build(self) -> Result<Self> {
+        equals_throw!(
+            self.files,
+            Vec::<PathBuf>::new(),
+            "Files array cannot be empty!"
+        );
+        equals_throw!(self.package, "", "Package cannot be blank!");
+        equals_throw!(
+            self.output,
+            PathBuf::new(),
+            "Output directory must be specified!"
+        );
+        equals_throw!(
+            self.bindings,
+            PathBuf::new(),
+            "Output file must be specified!"
+        );
+
+        self.post_build_internal()?;
+        Ok(self)
     }
 
     fn generate_bindings(&self) -> Result<()> {
@@ -159,22 +184,52 @@ impl BindgenConfig {
         gen_code(gen.clone(), exprs.clone(), self.bindings.clone())?;
         gen_java_code(gen.clone(), exprs, self.output.clone())?;
 
+        Ok(())
+    }
+
+    fn post_build_internal(&self) -> Result<()> {
+        let gen = Generator {
+            package: self.package.clone(),
+            with_annotations: self.annotations,
+            library: env::var("CARGO_PKG_NAME")?,
+        };
+
         let res = self.output.clone().join("resources");
 
         if !res.exists() {
             fs::create_dir_all(&res)?;
         }
 
+        let target = env::var("TARGET")?;
+        let mut lib_ext = "so";
+
+        if target.contains("windows") {
+            lib_ext = "dll";
+        } else if target.contains("apple-darwin") {
+            lib_ext = "dylib";
+        }
+
+        let re = Regex::new("gnueabi(?:hf)?")?;
         let dir = env::var("OUT_DIR")?;
         let target_dir = PathBuf::from(dir).join("../../..").canonicalize()?;
-        let target = env::var("TARGET")?;
-        let out_name = format!("{}-{}.so", gen.library, target);
+        let out_name = format!("{}-{}.{}", gen.library, target, lib_ext);
+        let out_name = re.replace(&out_name, "gnu").to_string();
         let out_path = res.join(out_name);
-        let in_name = format!("lib{}.so", gen.library);
+        let in_name = format!("lib{}.{}", gen.library, lib_ext);
         let in_path = target_dir.join(in_name);
 
         fs::copy(in_path, out_path)?;
 
         Ok(())
+    }
+
+    #[cfg(feature = "copy")]
+    /// Copy generated files to a directory, overwriting existing files.
+    pub fn copy_to(self, dir: impl Into<PathBuf>) -> Result<Self> {
+        let dir: PathBuf = dir.into();
+
+        dircpy::copy_dir_advanced(&self.output, dir, true, false, false, vec![], vec![])?;
+
+        Ok(self)
     }
 }

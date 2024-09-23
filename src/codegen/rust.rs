@@ -95,8 +95,8 @@ pub fn gen_function(
         format!(
             "{function_head}
 pub unsafe extern \"system\" fn {fn_name}<'local{generics}>(
-    mut env: jni::JNIEnv<'local>,
-    class: jni::objects::JClass<'local>{args}
+    mut env: JNIEnv<'local>,
+    class: objects::JClass<'local>{args}
 ) -> jobject{bounds} {{
     object_to_jobject(env, {src}::{rust_fn_name}({args_names}), \"{raw_cname}\".to_string())
 }}",
@@ -115,8 +115,8 @@ pub unsafe extern \"system\" fn {fn_name}<'local{generics}>(
             format!(
                 "{function_head}
 pub unsafe extern \"system\" fn {fn_name}<'local{generics}>(
-    mut env: jni::JNIEnv<'local>,
-    class: jni::objects::JClass<'local>,
+    mut env: JNIEnv<'local>,
+    class: objects::JClass<'local>,
     this: jlong{args}
 ) -> jobject{bounds} {{
     let this: &mut {cname} = jlong_to_pointer::<{cname}>(this).as_mut().unwrap();
@@ -137,8 +137,8 @@ pub unsafe extern \"system\" fn {fn_name}<'local{generics}>(
             format!(
                 "{function_head}
 pub unsafe extern \"system\" fn {fn_name}<'local{generics}>(
-    mut env: jni::JNIEnv<'local>,
-    class: jni::objects::JClass<'local>,
+    mut env: JNIEnv<'local>,
+    class: objects::JClass<'local>,
     this: jlong{args}
 ) -> jobject{bounds} {{
     let this: &{cname} = jlong_to_pointer::<{cname}>(this).as_mut().unwrap();
@@ -160,8 +160,8 @@ pub unsafe extern \"system\" fn {fn_name}<'local{generics}>(
             format!(
                 "{function_head}
 pub unsafe extern \"system\" fn {fn_name}<'local{generics}>(
-    mut env: jni::JNIEnv<'local>,
-    class: jni::objects::JClass<'local>,
+    mut env: JNIEnv<'local>,
+    class: objects::JClass<'local>,
     this: jlong{args}
 ) -> jobject{bounds} {{
     let this: &{cname} = jlong_to_pointer::<{cname}>(this).as_mut().unwrap();

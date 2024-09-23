@@ -6,10 +6,19 @@ edition = "2021"
 [lib]
 crate-type = ["cdylib"]
 
+[features]
+default = []
+post-build = ["rs4j/build", "rs4j/copy", "anyhow"]
+
+[[bin]]
+name = "post-build"
+path = "post-build.rs"
+required-features = ["post-build"]
+
 [dependencies]
-jni = "0.21.1"
+anyhow = { version = "1.0.89", optional = true }
+rs4j = { path = ".." }
 
 [build-dependencies]
 anyhow = "1.0.89"
-dircpy = "0.3.19"
-rs4j = { path = ".." }
+rs4j = { path = "..", features = ["build", "copy"] }

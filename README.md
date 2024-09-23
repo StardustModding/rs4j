@@ -16,18 +16,27 @@ auto-compile your code.
 You can add the package to your build script by running:
 
 ```sh
-cargo add rs4j --build
+cargo add rs4j --build --features build,copy
 ```
 
-You will also need to make sure you have the `jni` dependency installed:
+You will also need to make sure you have `rs4j` as a normal dependency:
 
 ```sh
-cargo add jni
+cargo add rs4j
 ```
 
-Here's an example `build.rs`:
+And set up your `Cargo.toml`:
+
+```toml
+[lib]
+crate-type = ["cdylib"]
+```
+
+Set up your `build.rs`:
 
 ```rust
+// build.rs
+
 use rs4j::build::BindgenConfig;
 use anyhow::Result;
 
@@ -57,6 +66,52 @@ fn main() -> Result<()> {
 }
 ```
 
+You'll also need to set up a post build script:
+
+```rust
+// post-build.rs
+
+use anyhow::Result;
+use rs4j::build::BindgenConfig;
+
+fn main() -> Result<()> {
+    let out_path = format!("{}/generated", env!("CARGO_MANIFEST_DIR"));
+    let src_path = format!("{}/java/src/generated", env!("CARGO_MANIFEST_DIR"));
+
+    BindgenConfig::new()
+        .package("com.example")
+        .bindings(format!("{}/src/bindings.rs", env!("CARGO_MANIFEST_DIR")))
+        .glob(format!("{}/bindings/**/*.rs4j", env!("CARGO_MANIFEST_DIR")))?
+        .output(&out_path)
+        .annotations(false)
+
+        // Run post-build actions
+        .post_build()?
+
+        // Copy it to your Java project
+        .copy_to(src_path)?;
+
+    Ok(())
+}
+```
+
+```toml
+# Cargo.toml
+
+[features]
+default = []
+post-build = ["rs4j/build", "rs4j/copy", "anyhow"]
+
+[[bin]]
+name = "post-build"
+path = "post-build.rs"
+required-features = ["post-build"]
+
+[dependencies]
+anyhow = { version = "[...]", optional = true }
+rs4j = "[...]"
+```
+
 Then, once that's done, use your `lib.rs` (or other file) to include
 the generated bindings:
 
@@ -68,6 +123,22 @@ use path::to::Dependency;
 
 // Include the generated code.
 include!("bindings.rs");
+```
+
+And use `rs4j`'s convenient CLI to build your project!
+
+```sh
+# Install:
+cargo install rs4j --features cli
+
+# Build:
+rs4j build
+
+# Build with Zigbuild:
+rs4j build -z # or --zigbuild
+
+# Build with more options:
+rs4j build -- --target aarch64-unknown-linux-gnu # Supports all options for `cargo build`!
 ```
 
 ## Syntax

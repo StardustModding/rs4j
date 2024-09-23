@@ -1,6 +1,6 @@
 [package]
 name = "rs4j"
-version = "0.5.0"
+version = "0.6.0"
 edition = "2021"
 authors = ["RedstoneWizard08", "Stardust Modding Contributors"]
 license = "MIT"
@@ -10,13 +10,27 @@ repository = "https://github.com/StardustModding/rs4j"
 keywords = ["ffi", "bridge", "extern", "java", "interop"]
 exclude = ["vscode"]
 
+[features]
+default = []
+build = ["dep:glob", "dep:regex"]
+copy = ["dep:dircpy"]
+cli = ["build", "dep:clap", "dep:serde_json"]
+
+[[bin]]
+name = "rs4j"
+required-features = ["cli"]
+
 [dependencies]
 anyhow = "1.0.89"
-clap = { version = "4.5.18", features = ["derive"] }
 convert_case = "0.6.0"
-glob = "0.3.1"
 jni = "0.21.1"
 peg = "0.8.4"
+
+clap = { version = "4.5.18", features = ["derive"], optional = true }
+glob = { version = "0.3.1", optional = true }
+dircpy = { version = "0.3.19", optional = true }
+serde_json = { version = "1.0.128", optional = true }
+regex = { version = "1.10.6", optional = true }
 
 [workspace]
 resolver = "2"

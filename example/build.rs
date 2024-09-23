@@ -12,9 +12,5 @@ fn main() -> Result<()> {
         .annotations(false)
         .generate()?;
 
-    let src_path = format!("{}/java/src/generated", env!("CARGO_MANIFEST_DIR"));
-
-    dircpy::copy_dir_advanced(out_path, src_path, true, false, false, vec![], vec![])?;
-
     Ok(())
 }
