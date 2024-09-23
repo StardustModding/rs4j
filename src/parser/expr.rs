@@ -2,9 +2,9 @@
 
 use anyhow::Result;
 
-use crate::types::{IntoJavaType, RustTypes};
+use crate::prelude::{IntoJavaType, RustTypes};
 
-use super::{bound::BoundExpr, class::ClassExpr, func::FunctionExpr, ty::TypeExpr};
+use super::{bound::BoundExpr, class::ClassExpr, field::FieldExpr, func::FunctionExpr, ty::TypeExpr};
 
 /// An expression.
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Default, Hash)]
@@ -23,6 +23,9 @@ pub enum Expr {
 
     /// A [`BoundExpr`].
     Bound(BoundExpr),
+
+    /// A [`FieldExpr`].
+    Field(FieldExpr),
 
     /// A catch-all.
     #[default]

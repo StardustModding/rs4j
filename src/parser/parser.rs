@@ -1,6 +1,6 @@
 //! The PEG parser.
 
-use super::{bound::BoundExpr, class::ClassExpr, expr::Expr, func::FunctionExpr, ty::TypeExpr};
+use super::{bound::BoundExpr, class::ClassExpr, expr::Expr, func::FunctionExpr, ty::TypeExpr, field::FieldExpr};
 
 parser! {
     /// The rs4j parser.
@@ -35,7 +35,7 @@ parser! {
 
         /// Parse an [`Expr`].
         pub rule expression() -> Expr
-            = function() / bound() / comment() / { Expr::None }
+            = function() / bound() / field() / comment() / { Expr::None }
 
         /// Parse generics.
         pub rule generics() -> Vec<Expr>
@@ -50,15 +50,21 @@ parser! {
             = [' ' | '\t' | '\n']* _ "bound" _ name: identifier() _ ":"
             _ traits: ([^';']+) _ ";" _
             { Expr::Bound(BoundExpr { name: Box::new(name), traits: String::from_iter(traits) }) }
+        
+        /// Parse a [`FieldExpr`].
+        pub rule field() -> Expr
+            = [' ' | '\t' | '\n']* _ "field" _ name: identifier() _ ":"
+            _ ty: (_type()) _ ";" _
+            { Expr::Field(FieldExpr { name: Box::new(name), ty: Box::new(ty) }) }
 
         /// Parse a function argument.
         pub rule fn_arg() -> (Expr, Expr, bool, bool, bool)
             =  _ i: identifier() _ ":" _
             into: ("#into")? _
             borrow: ("&")? _
-            borrow_mut: ("mut")? _
+            mut_: ("mut")? _
             t: _type() _
-            { (i, t, borrow.is_some(), borrow.is_some() && borrow_mut.is_some(), into.is_some()) }
+            { (i, t, borrow.is_some(), borrow.is_some() && mut_.is_some(), into.is_some()) }
 
         /// Parse a [`FunctionExpr`].
         pub rule function() -> Expr

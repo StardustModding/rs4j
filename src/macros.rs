@@ -9,3 +9,15 @@ macro_rules! equals_throw {
         }
     };
 }
+
+/// Basically a ternary
+#[macro_export]
+macro_rules! if_else {
+    ($($cond: expr)+, $($v1: expr)+, $($v2: expr)+) => {
+        if $($cond)+ {
+            $($v1)+
+        } else {
+            $($v2)+
+        }
+    }
+}

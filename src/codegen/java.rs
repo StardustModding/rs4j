@@ -6,13 +6,12 @@ use anyhow::Result;
 use convert_case::{Case, Casing};
 
 use crate::{
-    loader::{generate_loader, NATIVE_UTILS},
+    java::{NATIVE_TOOLS, NATIVE_UTILS},
+    loader::generate_loader,
     parser::{class::ClassExpr, expr::Expr, func::FunctionExpr},
 };
 
 use super::gen::Generator;
-
-const NATIVE_TOOLS: &str = include_str!("../NativeTools.java");
 
 /// Generate the Java code for an entire `.rs4j` file.
 pub fn gen_java_code(gen: Generator, exprs: Vec<Expr>, out: PathBuf) -> Result<()> {

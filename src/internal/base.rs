@@ -6,7 +6,7 @@ use jni::{
     JNIEnv,
 };
 
-use crate::include::object_to_jobject;
+use super::include::object_to_jobject;
 
 #[no_mangle]
 #[allow(

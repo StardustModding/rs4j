@@ -14,7 +14,7 @@ pub struct FunctionExpr {
     /// The native function name in Rust.
     pub rust_name: Box<Option<Expr>>,
 
-    /// The function arguments. Format: (name, type, borrow, borrow_mut, into)
+    /// The function arguments. Format: (name, type, borrow, mut, into)
     pub args: Box<Vec<(Expr, Expr, bool, bool, bool)>>,
 
     /// A list of the function's generics and their bounds.

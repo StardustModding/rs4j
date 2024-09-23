@@ -6,3 +6,4 @@ pub mod expr;
 pub mod func;
 pub mod parser;
 pub mod ty;
+pub mod field;

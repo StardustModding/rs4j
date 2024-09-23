@@ -25,7 +25,7 @@ pub fn gen_function(
 ) -> Result<String> {
     let pkg = gen.jni_pkg();
     let fn_name_id = name.ident()?;
-    let fn_name = format!("Java_{}_{}_jni_1{}", pkg, class.name.ident()?, fn_name_id);
+    let fn_name = format!("Java_{}_{}_jni_1{}", pkg, class.name.ident()?, fn_name_id.replace("_", "_1"));
     let rust_fn_name = rust_name.unwrap_or(Expr::Identifier(fn_name_id)).ident()?;
     let src = source.unwrap_or(class.real_name.clone().0).ident()?;
     let cname = class.ident_rust()?;

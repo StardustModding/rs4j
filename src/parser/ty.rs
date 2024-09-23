@@ -2,7 +2,7 @@
 
 use anyhow::Result;
 
-use crate::types::{IntoJavaType, RustTypes};
+use crate::prelude::{IntoJavaType, RustTypes};
 
 use super::expr::Expr;
 

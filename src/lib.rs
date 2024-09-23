@@ -10,23 +10,22 @@ pub extern crate anyhow;
 #[cfg(feature = "build")]
 pub mod build;
 
-pub mod base;
 pub mod codegen;
-pub mod conv;
 pub mod generate;
-pub mod include;
 pub mod loader;
 pub mod macros;
 pub mod parser;
-pub mod types;
+pub mod internal;
+pub mod java;
+pub mod class;
 
 pub mod prelude {
     //! Base types.
 
-    pub use super::base::*;
-    pub use super::conv::*;
-    pub use super::include::*;
-    pub use super::types::*;
+    pub use super::internal::base::*;
+    pub use super::internal::conv::*;
+    pub use super::internal::include::*;
+    pub use super::internal::types::*;
     pub use jni::sys::{
         jarray, jboolean, jbyte, jchar, jclass, jdouble, jfloat, jint, jlong, jobject, jshort,
         jstring, jvalue,
