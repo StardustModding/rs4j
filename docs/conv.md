@@ -1,10 +1,13 @@
-# Redstone's Guide to JNI Frickery (Now with pointers!)
+# Redstone's Guide to JNI Fuckery (Now with pointers!)
 
-This is the method I call "throwing around pointers until stuff works".
+This is the method I call "throwing around pointers until shit works".
 
 I'm too lazy to write out the Rust JNI bindings so just imagine them.
 
 Also, none of this is implemented yet, this is just a scheme for how I'm going to do it.
+
+> # WARNING
+> THIS IS NOT ACCURATE! The real, tested, and accurate code is in this directory!
 
 ## Simple Classes
 

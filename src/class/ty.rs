@@ -15,7 +15,11 @@ pub struct Type {
 impl Type {
     /// Get the full Rust type.
     pub fn full_type(&self) -> String {
-        let g = if_else!(self.generics.is_some(), format!("<{}>", self.get_generics()), "".into());
+        let g = if_else!(
+            self.generics.is_some(),
+            format!("<{}>", self.get_generics()),
+            "".into()
+        );
 
         format!("{}{}", self.kind.rust_name(), g)
     }
@@ -35,7 +39,11 @@ impl Type {
 
     /// Get the full Java type.
     pub fn full_type_java(&self) -> String {
-        let g = if_else!(self.generics.is_some(), format!("<{}>", self.get_generics_java()), "".into());
+        let g = if_else!(
+            self.generics.is_some(),
+            format!("<{}>", self.get_generics_java()),
+            "".into()
+        );
 
         format!("{}{}", self.kind.java_name(), g)
     }
@@ -63,7 +71,7 @@ pub enum TypeKind {
 
     /// A [`String`] type (Java: `String`).
     String,
-    
+
     /// An [`i8`] (Java: `byte`).
     I8,
 
@@ -102,16 +110,13 @@ pub enum TypeKind {
 
     /// A type that is non-primitive.
     Other(String),
-
-    /// A type parameter.
-    TypeParam(String),
 }
 
 impl TypeKind {
     /// Is this type primitive?
     pub fn is_primitive(&self) -> bool {
         match self {
-            Self::Other(_) | Self::TypeParam(_) => false,
+            Self::Other(_) => false,
             _ => true,
         }
     }
@@ -134,7 +139,6 @@ impl TypeKind {
             Self::Bool => "bool".into(),
             Self::Char => "char".into(),
             Self::Other(o) => o.to_owned(),
-            Self::TypeParam(t) => t.to_owned(),
         }
     }
 
@@ -156,7 +160,45 @@ impl TypeKind {
             Self::Bool => "Boolean".into(),
             Self::Char => "Char".into(),
             Self::Other(o) => o.to_owned(),
-            Self::TypeParam(t) => t.to_owned(),
+        }
+    }
+
+    /// Is this type a number?
+    pub fn is_number(&self) -> bool {
+        match self {
+            Self::I8
+            | Self::I16
+            | Self::I32
+            | Self::I64
+            | Self::U8
+            | Self::U16
+            | Self::U32
+            | Self::U64
+            | Self::F32
+            | Self::F64
+            | Self::Char => true,
+            _ => false,
+        }
+    }
+
+    /// Get the type in Java.
+    pub fn java_ty(&self) -> String {
+        match self {
+            Self::Void => "()".into(),
+            Self::String => "jstring".into(),
+            Self::I8 => "jbyte".into(),
+            Self::I16 => "jshort".into(),
+            Self::I32 => "jint".into(),
+            Self::I64 => "jlong".into(),
+            Self::U8 => "jbyte".into(),
+            Self::U16 => "jshort".into(),
+            Self::U32 => "jint".into(),
+            Self::U64 => "jlong".into(),
+            Self::F32 => "jfloat".into(),
+            Self::F64 => "jdouble".into(),
+            Self::Bool => "jboolean".into(),
+            Self::Char => "jchar".into(),
+            Self::Other(_) => "jlong".into(),
         }
     }
 }

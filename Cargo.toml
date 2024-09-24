@@ -34,4 +34,4 @@ regex = { version = "1.10.6", optional = true }
 
 [workspace]
 resolver = "2"
-members = ["./example"]
+members = ["./example", "docs/docs-test"]

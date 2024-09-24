@@ -7,6 +7,7 @@ public class MyStruct {
     private static native long jni_set_a(long ptr, String value);
     private static native long jni_set_b(long ptr, Integer value);
     private static native long jni_set_c(long ptr, Double value);
+    private static native void jni_free(long ptr);
     private native long jni_init_new();
     
     private long __ptr;
@@ -65,6 +66,10 @@ public class MyStruct {
 
     public long getPointer() {
         return __ptr;
+    }
+
+    public void free() {
+        jni_free(__ptr);
     }
 
     public static MyStruct from(long ptr) {

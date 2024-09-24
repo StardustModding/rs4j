@@ -5,6 +5,7 @@ public class MyOtherStruct implements ParentClass {
     private static native long jni_get_b(long ptr); // This is the pointer to MyOtherStruct
     private static native long jni_set_a(long ptr, String value);
     private static native long jni_set_b(long ptr, long value); // The pointer is `value`
+    private static native void jni_free(long ptr);
     private native long jni_init_new();
     
     private long __ptr;
@@ -42,6 +43,10 @@ public class MyOtherStruct implements ParentClass {
 
     public long getPointer() {
         return __ptr;
+    }
+
+    public void free() {
+        jni_free(__ptr);
     }
 
     public static MyOtherStruct from(long ptr) {

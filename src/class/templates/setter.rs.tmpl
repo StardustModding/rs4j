@@ -1,0 +1,23 @@
+#[no_mangle]
+#[allow(
+    unused_mut,
+    unused_variables,
+    unused_unsafe,
+    non_snake_case,
+    improper_ctypes_definitions,
+    no_mangle_generic_items,
+    deprecated,
+    missing_docs
+)]
+pub unsafe extern "system" fn {name}<'local>(
+    mut env: JNIEnv<'local>,
+    class: JClass<'local>,
+    ptr: jlong,
+    val: {val_ty},
+) -> jlong {
+    let it: &mut {class} = jlong_to_pointer::<{class}>(ptr).as_mut().unwrap();
+
+    it.{field} = val;
+
+    Box::into_raw(Box::new(it)) as jlong
+}

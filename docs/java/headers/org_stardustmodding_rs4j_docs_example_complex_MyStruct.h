@@ -57,6 +57,14 @@ JNIEXPORT jlong JNICALL Java_org_stardustmodding_rs4j_docs_example_complex_MyStr
 
 /*
  * Class:     org_stardustmodding_rs4j_docs_example_complex_MyStruct
+ * Method:    jni_free
+ * Signature: (J)V
+ */
+JNIEXPORT void JNICALL Java_org_stardustmodding_rs4j_docs_example_complex_MyStruct_jni_1free
+  (JNIEnv *, jclass, jlong);
+
+/*
+ * Class:     org_stardustmodding_rs4j_docs_example_complex_MyStruct
  * Method:    jni_init_new
  * Signature: ()J
  */

@@ -9,6 +9,7 @@ pub mod native;
 pub mod wrapper;
 pub mod field;
 pub mod arg;
+pub mod ctx;
 
 /// A builder for a Java class.
 pub struct JavaClassBuilder {
