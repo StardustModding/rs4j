@@ -1,5 +1,5 @@
 {
-    "name": "@rs4j/vscode",
+    "name": "rs4j",
     "displayName": "rs4j Language Support",
     "description": "Language support for rs4j",
     "version": "0.0.1",

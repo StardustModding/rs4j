@@ -8,7 +8,7 @@ uuid: ""
 repository:
       main:
             patterns:
-                  - match: \b(fn|mut|optional|class|static|consumed|bound)
+                  - match: \b(fn|mut|optional|class|static|consumed|bound|field)
                     name: keyword.rs4j
                   - match: (#into)
                     name: keyword.rs4j

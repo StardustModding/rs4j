@@ -9,6 +9,7 @@ export const rs4j: LanguageFn = () => {
         "static",
         "consumed",
         "bound",
+        "field",
     ];
 
     const TYPES = [

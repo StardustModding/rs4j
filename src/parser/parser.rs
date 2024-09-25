@@ -49,7 +49,7 @@ parser! {
             = "<" generics: ((_ t: _type() _ b: (":" _ traits: (_type() ** ",") _ { traits })? _ { (t, b) }) ** ",") ">" _ { generics }
 
         /// Parse a [`BoundExpr`].
-        pub rule bound() -> Expr
+        pub rule bound() -> Expr // TODO!
             = [' ' | '\t' | '\n']* _ "bound" _ name: identifier() _ ":"
             _ traits: ([^';']+) _ ";" _
             { Expr::Bound(BoundExpr { name: Box::new(name), traits: String::from_iter(traits) }) }
@@ -90,8 +90,8 @@ parser! {
                     is_static: static_.is_some(),
                     is_init: init.is_some(),
                     is_mut: mut_.is_some(),
-                    is_optional: optional.is_some(),
-                    is_consumed: consumed.is_some(),
+                    is_optional: optional.is_some(), // TODO
+                    is_consumed: consumed.is_some(), // TODO
                     rust_name: Box::new(rust_name),
                     name: Box::new(name),
                     source: Box::new(src),
