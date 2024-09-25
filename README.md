@@ -2,6 +2,7 @@
 
 [![Crates.io Version](https://img.shields.io/crates/v/rs4j?style=for-the-badge)](https://crates.io/crates/rs4j)
 [![docs.rs](https://img.shields.io/docsrs/rs4j?style=for-the-badge)](https://docs.rs/rs4j)
+![Lines of code](https://tokei.rs/b1/github/StardustModding/rs4j?style=for-the-badge&label=Lines+Of+Code)
 
 A small, automatic, efficient, and easy-to-use Rust to Java bridge.
 
