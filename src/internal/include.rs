@@ -1,6 +1,10 @@
 //! Utils for Java bindings
 
-use jni::{objects::JValueGen, sys::{jlong, jobject}, JNIEnv};
+use jni::{
+    objects::JValueGen,
+    sys::{jlong, jobject},
+    JNIEnv,
+};
 
 /// Convert a [`jlong`] to a `*mut T`
 #[cfg(target_pointer_width = "32")]

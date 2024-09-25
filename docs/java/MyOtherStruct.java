@@ -6,6 +6,9 @@ public class MyOtherStruct implements ParentClass {
     private static native long jni_set_a(long ptr, String value);
     private static native long jni_set_b(long ptr, long value); // The pointer is `value`
     private static native void jni_free(long ptr);
+    private static native void jni_say(long ptr, String p2);
+    private static native void jni_say_only(long ptr, String message);
+    private static native void jni_say_with(long ptr, long p1, String p2);
     private native long jni_init_new();
     
     private long __ptr;
@@ -47,6 +50,18 @@ public class MyOtherStruct implements ParentClass {
 
     public void free() {
         jni_free(__ptr);
+    }
+
+    public void say(String p2) {
+        jni_say(__ptr, p2);
+    }
+
+    public void sayOnly(String message) {
+        jni_say_only(__ptr, message);
+    }
+
+    public void sayWith(MyStruct p1, String p2) {
+        jni_say_with(__ptr, p1.getPointer(), p2);
     }
 
     public static MyOtherStruct from(long ptr) {

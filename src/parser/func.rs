@@ -1,6 +1,6 @@
 //! The module for [`FunctionExpr`]s.
 
-use super::expr::Expr;
+use super::{expr::Expr, ty::TypeExpr};
 
 /// A function.
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Default, Hash)]
@@ -15,16 +15,19 @@ pub struct FunctionExpr {
     pub rust_name: Box<Option<Expr>>,
 
     /// The function arguments. Format: (name, type, borrow, mut, into)
-    pub args: Box<Vec<(Expr, Expr, bool, bool, bool)>>,
+    pub args: Box<Vec<(Expr, TypeExpr, bool, bool, bool)>>,
 
     /// A list of the function's generics and their bounds.
-    pub generics: Box<Vec<(Expr, Option<Vec<Expr>>)>>,
+    pub generics: Vec<(TypeExpr, Option<Vec<TypeExpr>>)>,
 
     /// The return type.
-    pub ret: Box<Option<Expr>>,
+    pub ret: Box<Option<TypeExpr>>,
 
     /// Is it static?
     pub is_static: bool,
+
+    /// Is it an initializer?
+    pub is_init: bool,
 
     /// Does it need &mut self?
     pub is_mut: bool,

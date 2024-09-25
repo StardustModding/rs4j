@@ -1,6 +1,9 @@
 //! The PEG parser.
 
-use super::{bound::BoundExpr, class::ClassExpr, expr::Expr, func::FunctionExpr, ty::TypeExpr, field::FieldExpr};
+use super::{
+    bound::BoundExpr, class::ClassExpr, expr::Expr, field::FieldExpr, func::FunctionExpr,
+    ty::TypeExpr,
+};
 
 parser! {
     /// The rs4j parser.
@@ -15,7 +18,7 @@ parser! {
                 { (real, real_generics) }
             )?
             "{" _ stmts: statements() _ "}" _ ";" _
-            { Expr::Class(ClassExpr { name: Box::new(name.clone()), real_name: Box::new(real_name.unwrap_or((name, generics.clone()))), stmts: Box::new(stmts), generics: Box::new(generics) }) }
+            { Expr::Class(ClassExpr { name: Box::new(name.clone()), real_name: Box::new(real_name.unwrap_or((name, generics.clone()))), stmts: Box::new(stmts), generics }) }
 
         /// Parse many [`ClassExpr`]s.
         pub rule classes() -> Vec<Expr>
@@ -38,11 +41,11 @@ parser! {
             = function() / bound() / field() / comment() / { Expr::None }
 
         /// Parse generics.
-        pub rule generics() -> Vec<Expr>
+        pub rule generics() -> Vec<TypeExpr>
             = "<" generics: ((_ t: _type() _ { t }) ** ",") ">" _ { generics }
 
         /// Parse generics with type bounds.
-        pub rule generics_with_bounds() -> Vec<(Expr, Option<Vec<Expr>>)>
+        pub rule generics_with_bounds() -> Vec<(TypeExpr, Option<Vec<TypeExpr>>)>
             = "<" generics: ((_ t: _type() _ b: (":" _ traits: (_type() ** ",") _ { traits })? _ { (t, b) }) ** ",") ">" _ { generics }
 
         /// Parse a [`BoundExpr`].
@@ -50,15 +53,15 @@ parser! {
             = [' ' | '\t' | '\n']* _ "bound" _ name: identifier() _ ":"
             _ traits: ([^';']+) _ ";" _
             { Expr::Bound(BoundExpr { name: Box::new(name), traits: String::from_iter(traits) }) }
-        
+
         /// Parse a [`FieldExpr`].
         pub rule field() -> Expr
             = [' ' | '\t' | '\n']* _ "field" _ name: identifier() _ ":"
             _ ty: (_type()) _ ";" _
-            { Expr::Field(FieldExpr { name: Box::new(name), ty: Box::new(ty) }) }
+            { Expr::Field(FieldExpr { name: Box::new(name), ty }) }
 
         /// Parse a function argument.
-        pub rule fn_arg() -> (Expr, Expr, bool, bool, bool)
+        pub rule fn_arg() -> (Expr, TypeExpr, bool, bool, bool)
             =  _ i: identifier() _ ":" _
             into: ("#into")? _
             borrow: ("&")? _
@@ -70,6 +73,7 @@ parser! {
         pub rule function() -> Expr
             = [' ' | '\t' | '\n']* _ rust_name: ("[" _ rust_name: identifier() _ "]" _ { rust_name })?
             _ static_: "static"? _
+            _ init: "init"? _
             _ mut_: "mut"? _
             _ consumed: "consumed"? _
             _ optional: "optional"? _
@@ -82,8 +86,9 @@ parser! {
 
             {
                 Expr::Function(FunctionExpr {
-                    generics: Box::new(generics.unwrap_or_default()),
+                    generics: generics.unwrap_or_default(),
                     is_static: static_.is_some(),
+                    is_init: init.is_some(),
                     is_mut: mut_.is_some(),
                     is_optional: optional.is_some(),
                     is_consumed: consumed.is_some(),
@@ -103,9 +108,9 @@ parser! {
             } / expected!("identifier")
 
         /// Parse a [`TypeExpr`].
-        pub rule _type() -> Expr
+        pub rule _type() -> TypeExpr
             = id: identifier() _ generics: ("<" generics: ((_ t: _type() _ { t }) ** ",") ">" _ { generics })?
-            { Expr::Type(TypeExpr { id: Box::new(id), generics: Box::new(generics) }) }
+            { TypeExpr { id: Box::new(id), generics: Box::new(generics) } }
 
         /// Parse (and ignore) a comment.
         pub rule comment() -> Expr

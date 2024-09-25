@@ -1,6 +1,6 @@
 //! Types.
 
-use crate::if_else;
+use crate::{if_else, parser::ty::TypeExpr};
 
 /// A type.
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Default)]
@@ -13,6 +13,11 @@ pub struct Type {
 }
 
 impl Type {
+    /// Create a new [`Type`].
+    pub fn new(kind: TypeKind, generics: Option<Vec<Type>>) -> Self {
+        Self { kind, generics }
+    }
+
     /// Get the full Rust type.
     pub fn full_type(&self) -> String {
         let g = if_else!(
@@ -59,6 +64,11 @@ impl Type {
         }
 
         generics.join(", ")
+    }
+
+    /// Get the conversion function for this type
+    pub fn convert_func(&self) -> String {
+        self.kind.convert_func()
     }
 }
 
@@ -142,24 +152,36 @@ impl TypeKind {
         }
     }
 
+    /// Can we cast from a JNI type to the Rust type?
+    pub fn can_cast(&self) -> bool {
+        match self {
+            Self::String | Self::Other(_) => false,
+            _ => true,
+        }
+    }
+
     /// Get the type's name in Java.
     pub fn java_name(&self) -> String {
         match self {
             Self::Void => "Void".into(),
             Self::String => "String".into(),
-            Self::I8 => "Byte".into(),
-            Self::I16 => "Short".into(),
-            Self::I32 => "Integer".into(),
-            Self::I64 => "Long".into(),
-            Self::U8 => "Byte".into(),
-            Self::U16 => "Short".into(),
-            Self::U32 => "Integer".into(),
-            Self::U64 => "Long".into(),
+            Self::I8 | Self::U8 => "Byte".into(),
+            Self::I16 | Self::U16 => "Short".into(),
+            Self::I32 | Self::U32 => "Integer".into(),
+            Self::I64 | Self::U64 => "Long".into(),
             Self::F32 => "Float".into(),
             Self::F64 => "Double".into(),
             Self::Bool => "Boolean".into(),
             Self::Char => "Char".into(),
             Self::Other(o) => o.to_owned(),
+        }
+    }
+
+    /// Get the type's name in Java.
+    pub fn native_name(&self) -> String {
+        match self {
+            Self::Other(_) => "Long".into(),
+            _ => self.java_name(),
         }
     }
 
@@ -181,24 +203,80 @@ impl TypeKind {
         }
     }
 
-    /// Get the type in Java.
-    pub fn java_ty(&self) -> String {
+    /// Get the type for JNI.
+    pub fn jni_name(&self) -> String {
         match self {
             Self::Void => "()".into(),
             Self::String => "jstring".into(),
-            Self::I8 => "jbyte".into(),
-            Self::I16 => "jshort".into(),
-            Self::I32 => "jint".into(),
-            Self::I64 => "jlong".into(),
-            Self::U8 => "jbyte".into(),
-            Self::U16 => "jshort".into(),
-            Self::U32 => "jint".into(),
-            Self::U64 => "jlong".into(),
+            Self::I8 | Self::U8 => "jbyte".into(),
+            Self::I16 | Self::U16 => "jshort".into(),
+            Self::I32 | Self::U32 => "jint".into(),
+            Self::I64 | Self::U64 => "jlong".into(),
             Self::F32 => "jfloat".into(),
             Self::F64 => "jdouble".into(),
             Self::Bool => "jboolean".into(),
             Self::Char => "jchar".into(),
             Self::Other(_) => "jlong".into(),
+        }
+    }
+
+    /// Get the type for JNI arguments. For some reason, the string one is different.
+    pub fn jni_arg_name(&self) -> String {
+        match self {
+            Self::String => "JString<'local>".into(),
+            _ => self.jni_name(),
+        }
+    }
+
+    /// Get the conversion function for this type
+    pub fn convert_func(&self) -> String {
+        match self {
+            Self::Void => "Blaze3D.youJustLostTheGame".into(),
+            Self::String => "NativeTools.getString".into(),
+            Self::I8 | Self::U8 => "NativeTools.getByte".into(),
+            Self::I16 | Self::U16 => "NativeTools.getShort".into(),
+            Self::I32 | Self::U32 => "NativeTools.getInt".into(),
+            Self::I64 | Self::U64 => "NativeTools.getLong".into(),
+            Self::F32 => "NativeTools.getFloat".into(),
+            Self::F64 => "NativeTools.getDouble".into(),
+            Self::Bool => "NativeTools.getBool".into(),
+            Self::Char => "NativeTools.getChar".into(),
+            Self::Other(it) => format!("{}.from", it),
+        }
+    }
+}
+
+impl From<TypeExpr> for TypeKind {
+    fn from(value: TypeExpr) -> Self {
+        match value.id.ident_strict().unwrap().as_str() {
+            "()" => Self::Void,
+            "i8" => Self::I8,
+            "i16" => Self::I16,
+            "i32" => Self::I32,
+            "i64" => Self::I64,
+            "u8" => Self::U8,
+            "u16" => Self::U16,
+            "u32" => Self::U32,
+            "u64" => Self::U64,
+            "f32" => Self::F32,
+            "f64" => Self::F64,
+            "bool" => Self::Bool,
+            "char" => Self::Char,
+            "String" => Self::String,
+            it => Self::Other(it.to_string()),
+        }
+    }
+}
+
+impl From<TypeExpr> for Type {
+    fn from(value: TypeExpr) -> Self {
+        Self {
+            generics: value
+                .generics
+                .clone()
+                .map(|v| v.iter().cloned().map(|v| v.into()).collect::<Vec<_>>()),
+
+            kind: value.into(),
         }
     }
 }

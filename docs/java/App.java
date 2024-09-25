@@ -1,5 +1,6 @@
 package main;
 
+import org.stardustmodding.rs4j.docs.example.complex.MyStruct;
 import org.stardustmodding.rs4j.docs.example.complex.MyOtherStruct;
 
 public class App {
@@ -7,22 +8,14 @@ public class App {
         System.loadLibrary("docs_test");
 
         MyOtherStruct s = new MyOtherStruct();
+        MyStruct b = s.getB();
 
-        s.setA("Hello,");
-
-        System.out.println("S: " + s.getA());
-
-        s.setA("world!");
-
-        System.out.println("S: " + s.getA());
-
-        s.getB().setA("2Hello,");
-
-        System.out.println("S: " + s.getB().getA());
-
-        s.getB().setA("2world!");
-
-        System.out.println("S: " + s.getB().getA());
+        s.sayOnly("First hello!");
+        s.getB().setA("Hello, ");
+        s.say("world!");
+        s.sayWith(b, "hello!");
+        b.setA("Second ");
+        s.sayWith(b, "hello!");
 
         s.free();
     }

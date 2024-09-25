@@ -6,9 +6,10 @@ use anyhow::Result;
 use convert_case::{Case, Casing};
 
 use crate::{
-    java::{NATIVE_TOOLS, NATIVE_UTILS},
+    class::JavaClassBuilder,
+    java::{NATIVE_TOOLS, NATIVE_UTILS, PARENT_CLASS},
     loader::generate_loader,
-    parser::{class::ClassExpr, expr::Expr, func::FunctionExpr},
+    parser::{class::ClassExpr, expr::Expr, func::FunctionExpr, ty::TypeExpr},
 };
 
 use super::gen::Generator;
@@ -17,7 +18,18 @@ use super::gen::Generator;
 pub fn gen_java_code(gen: Generator, exprs: Vec<Expr>, out: PathBuf) -> Result<()> {
     for item in exprs {
         if let Expr::Class(class) = item {
-            gen_class_code(&gen, &out, class)?;
+            let build =
+                JavaClassBuilder::new(class.name.ident_strict()?, &gen.package).of(class.clone());
+            // gen_class_code(&gen, &out, class)?;
+            let dir = out.join("java/src").join(gen.dir_pkg());
+            let path = dir.join(format!("{}.java", class.name.ident()?));
+            let code = build.java_code();
+
+            if !dir.exists() {
+                fs::create_dir_all(dir)?;
+            }
+
+            fs::write(path, code)?;
         }
     }
 
@@ -43,10 +55,14 @@ pub fn gen_java_code(gen: Generator, exprs: Vec<Expr>, out: PathBuf) -> Result<(
     let path = dir.join("NativeTools.java");
 
     if !dir.exists() {
-        fs::create_dir_all(dir)?;
+        fs::create_dir_all(&dir)?;
     }
 
     fs::write(path, NATIVE_TOOLS)?;
+
+    let path = dir.join("ParentClass.java");
+
+    fs::write(path, PARENT_CLASS)?;
 
     Ok(())
 }
@@ -85,6 +101,7 @@ public class {name}{generics} {{\n    private long __pointer;\n\n",
         if let Expr::Function(FunctionExpr {
             args,
             is_mut: _,
+            is_init: _,
             is_static,
             name,
             ret,
@@ -100,13 +117,13 @@ public class {name}{generics} {{\n    private long __pointer;\n\n",
             let a_generics = if c_generics.is_empty() {
                 generics
                     .iter()
-                    .map(|v| v.0.ident().unwrap())
+                    .map(|v| v.0.as_rust().unwrap())
                     .collect::<Vec<_>>()
                     .join(", ")
             } else {
                 let g = generics
                     .iter()
-                    .map(|v| v.0.ident().unwrap())
+                    .map(|v| v.0.as_rust().unwrap())
                     .collect::<Vec<_>>()
                     .join(", ");
 
@@ -125,7 +142,7 @@ public class {name}{generics} {{\n    private long __pointer;\n\n",
 
             let f_generics = generics
                 .iter()
-                .map(|v| v.0.ident().unwrap())
+                .map(|v| v.0.as_rust().unwrap())
                 .collect::<Vec<_>>()
                 .join(", ");
 
@@ -135,8 +152,8 @@ public class {name}{generics} {{\n    private long __pointer;\n\n",
                 format!(" <{}>", f_generics,)
             };
 
-            let ret = ret.unwrap_or(Expr::Identifier(String::from("void")));
-            let ret_t = ret.ident_java()?;
+            let ret = ret.unwrap_or(TypeExpr::default());
+            let ret_t = ret.as_java()?;
 
             let opt = if is_optional && gen.with_annotations {
                 "@Nullable\n    "
@@ -148,11 +165,7 @@ public class {name}{generics} {{\n    private long __pointer;\n\n",
             let mut java_args_names = Vec::new();
 
             for (name, ty, _, _, _) in *args {
-                java_args.push(format!(
-                    "{} {}",
-                    ty.ident_java()?,
-                    name.ident_strict_java()?
-                ));
+                java_args.push(format!("{} {}", ty.as_java()?, name.ident_strict_java()?));
 
                 java_args_names.push(name.ident_strict_java()?);
             }
@@ -186,7 +199,7 @@ public class {name}{generics} {{\n    private long __pointer;\n\n",
 
                     code.push_str(&format!(
                         "        return {}(val);\n    }}\n\n",
-                        ret.get_type()?.conv_method()?,
+                        ret.conv_method()?,
                     ));
                 }
             } else {
@@ -226,7 +239,7 @@ public class {name}{generics} {{\n    private long __pointer;\n\n",
 
                     code.push_str(&format!(
                         "        return {}(val);\n    }}\n\n",
-                        ret.get_type()?.conv_method()?,
+                        ret.conv_method()?,
                     ));
                 }
             }

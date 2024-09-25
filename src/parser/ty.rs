@@ -7,13 +7,22 @@ use crate::prelude::{IntoJavaType, RustTypes};
 use super::expr::Expr;
 
 /// A type (with optional generics).
-#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Default, Hash)]
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct TypeExpr {
     /// The type's ID.
     pub id: Box<Expr>,
 
     /// The type's generics.
-    pub generics: Box<Option<Vec<Expr>>>,
+    pub generics: Box<Option<Vec<TypeExpr>>>,
+}
+
+impl Default for TypeExpr {
+    fn default() -> Self {
+        Self {
+            id: Box::new(Expr::Identifier("void".into())),
+            generics: Box::new(None),
+        }
+    }
 }
 
 impl TypeExpr {
@@ -25,16 +34,30 @@ impl TypeExpr {
         if let Some(generics) = *self.generics.clone() {
             let generics = generics
                 .iter()
-                .map(|v| {
-                    v.ident_strict_java()
-                        .unwrap_or(v.get_type().unwrap().as_java().unwrap())
-                })
+                .map(|v| v.as_java().unwrap())
                 .collect::<Vec<String>>()
                 .join(", ");
 
             Ok(format!("{}<{}>", java_type, generics))
         } else {
             Ok(java_type)
+        }
+    }
+
+    /// Get this as a Rust type.
+    pub fn as_rust(&self) -> Result<String> {
+        let ident = self.id.ident_strict()?;
+
+        if let Some(generics) = *self.generics.clone() {
+            let generics = generics
+                .iter()
+                .map(|v| v.as_rust().unwrap())
+                .collect::<Vec<String>>()
+                .join(", ");
+
+            Ok(format!("{}<{}>", ident, generics))
+        } else {
+            Ok(ident)
         }
     }
 

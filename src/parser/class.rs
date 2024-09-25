@@ -2,7 +2,7 @@
 
 use anyhow::Result;
 
-use super::{bound::BoundExpr, expr::Expr};
+use super::{bound::BoundExpr, expr::Expr, ty::TypeExpr};
 
 /// A class.
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Default, Hash)]
@@ -11,13 +11,13 @@ pub struct ClassExpr {
     pub name: Box<Expr>,
 
     /// The real rust of the class.
-    pub real_name: Box<(Expr, Option<Vec<Expr>>)>,
+    pub real_name: Box<(Expr, Option<Vec<TypeExpr>>)>,
 
     /// The statements in the class.
     pub stmts: Box<Vec<Expr>>,
 
     /// The class's generics.
-    pub generics: Box<Option<Vec<Expr>>>,
+    pub generics: Option<Vec<TypeExpr>>,
 }
 
 impl ClassExpr {
@@ -25,10 +25,10 @@ impl ClassExpr {
     pub fn ident(&self) -> Result<String> {
         let ident = self.name.ident()?;
 
-        if let Some(generics) = *self.generics.clone() {
+        if let Some(generics) = self.generics.clone() {
             let generics = generics
                 .iter()
-                .map(|v| v.ident().unwrap())
+                .map(|v| v.as_rust().unwrap())
                 .collect::<Vec<String>>()
                 .join(", ");
 
@@ -45,7 +45,7 @@ impl ClassExpr {
         if let Some(generics) = self.real_name.1.clone() {
             let it = generics
                 .iter()
-                .map(|v| v.ident().unwrap())
+                .map(|v| v.as_rust().unwrap())
                 .collect::<Vec<_>>()
                 .join(", ");
 
@@ -57,10 +57,10 @@ impl ClassExpr {
 
     /// Get the generics for this class.
     pub fn generics(&self) -> String {
-        if let Some(generics) = *self.generics.clone() {
+        if let Some(generics) = self.generics.clone() {
             let generics = generics
                 .iter()
-                .map(|v| v.ident_only().unwrap())
+                .map(|v| v.id.ident_strict().unwrap())
                 .collect::<Vec<String>>()
                 .join(", ");
 

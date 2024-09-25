@@ -45,7 +45,7 @@ macro_rules! getter {
             let it: &$s = jlong_to_pointer::<$s>(ptr).as_mut().unwrap();
             it.$f as $t
         }
-    }
+    };
 }
 
 /// Make a setter
@@ -72,8 +72,8 @@ macro_rules! setter {
             let it: &mut $s = jlong_to_pointer::<$s>(ptr).as_mut().unwrap();
 
             it.$f = val;
-        
+
             Box::into_raw(Box::new(it)) as jlong
         }
-    }
+    };
 }

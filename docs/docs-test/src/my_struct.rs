@@ -1,11 +1,25 @@
-use jni::{objects::{JClass, JObject, JString}, sys::{jdouble, jint, jlong, jstring}, JNIEnv};
-use rs4j::{getter, setter};
 use crate::{jlong_to_pointer, MyStruct};
+use jni::{
+    objects::{JClass, JObject, JString},
+    sys::{jdouble, jint, jlong, jstring},
+    JNIEnv,
+};
+use rs4j::{getter, setter};
 
-getter!(Java_org_stardustmodding_rs4j_docs_example_complex_MyStruct_jni_1get_1b = MyStruct.b as jint);
-getter!(Java_org_stardustmodding_rs4j_docs_example_complex_MyStruct_jni_1get_1c = MyStruct.c as jdouble);
-setter!(Java_org_stardustmodding_rs4j_docs_example_complex_MyStruct_jni_1set_1b = jint = MyStruct.b as i32);
-setter!(Java_org_stardustmodding_rs4j_docs_example_complex_MyStruct_jni_1set_1c = jdouble = MyStruct.c as f64);
+getter!(
+    Java_org_stardustmodding_rs4j_docs_example_complex_MyStruct_jni_1get_1b = MyStruct.b as jint
+);
+getter!(
+    Java_org_stardustmodding_rs4j_docs_example_complex_MyStruct_jni_1get_1c = MyStruct.c as jdouble
+);
+setter!(
+    Java_org_stardustmodding_rs4j_docs_example_complex_MyStruct_jni_1set_1b =
+        jint = MyStruct.b as i32
+);
+setter!(
+    Java_org_stardustmodding_rs4j_docs_example_complex_MyStruct_jni_1set_1c =
+        jdouble = MyStruct.c as f64
+);
 
 #[no_mangle]
 #[allow(
@@ -18,7 +32,9 @@ setter!(Java_org_stardustmodding_rs4j_docs_example_complex_MyStruct_jni_1set_1c 
     deprecated,
     missing_docs
 )]
-pub unsafe extern "system" fn Java_org_stardustmodding_rs4j_docs_example_complex_MyStruct_jni_1get_1a<'local>(
+pub unsafe extern "system" fn Java_org_stardustmodding_rs4j_docs_example_complex_MyStruct_jni_1get_1a<
+    'local,
+>(
     mut env: JNIEnv<'local>,
     class: JClass<'local>,
     ptr: jlong,
@@ -38,7 +54,9 @@ pub unsafe extern "system" fn Java_org_stardustmodding_rs4j_docs_example_complex
     deprecated,
     missing_docs
 )]
-pub unsafe extern "system" fn Java_org_stardustmodding_rs4j_docs_example_complex_MyStruct_jni_1set_1a<'local>(
+pub unsafe extern "system" fn Java_org_stardustmodding_rs4j_docs_example_complex_MyStruct_jni_1set_1a<
+    'local,
+>(
     mut env: JNIEnv<'local>,
     class: JClass<'local>,
     ptr: jlong,
@@ -63,7 +81,9 @@ pub unsafe extern "system" fn Java_org_stardustmodding_rs4j_docs_example_complex
     deprecated,
     missing_docs
 )]
-pub unsafe extern "system" fn Java_org_stardustmodding_rs4j_docs_example_complex_MyStruct_jni_1init_1new<'local>(
+pub unsafe extern "system" fn Java_org_stardustmodding_rs4j_docs_example_complex_MyStruct_jni_1init_1new<
+    'local,
+>(
     mut env: JNIEnv<'local>,
     _obj: JObject<'local>,
 ) -> jlong {
@@ -82,7 +102,9 @@ pub unsafe extern "system" fn Java_org_stardustmodding_rs4j_docs_example_complex
     deprecated,
     missing_docs
 )]
-pub unsafe extern "system" fn Java_org_stardustmodding_rs4j_docs_example_complex_MyStruct_jni_1free<'local>(
+pub unsafe extern "system" fn Java_org_stardustmodding_rs4j_docs_example_complex_MyStruct_jni_1free<
+    'local,
+>(
     mut env: JNIEnv<'local>,
     class: JClass<'local>,
     ptr: jlong,

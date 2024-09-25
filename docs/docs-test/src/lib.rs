@@ -1,5 +1,5 @@
-pub mod my_struct;
 pub mod my_other_struct;
+pub mod my_struct;
 
 use jni::sys::jlong;
 
@@ -44,5 +44,17 @@ impl MyOtherStruct {
             a: String::new(),
             b: MyStruct::new(),
         }
+    }
+
+    pub fn say_only(&self, message: String) {
+        println!("{}", message);
+    }
+
+    pub fn say(&self, p2: String) {
+        println!("{}{}", self.b.a, p2);
+    }
+
+    pub fn say_with(&self, p1: MyStruct, p2: String) {
+        println!("{}{}", p1.a, p2);
     }
 }

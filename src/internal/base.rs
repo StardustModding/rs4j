@@ -74,7 +74,9 @@ basic_method!(Java_org_stardustmodding_rs4j_util_NativeTools_getDouble = jdouble
     deprecated,
     missing_docs
 )]
-pub unsafe extern "system" fn Java_org_stardustmodding_rs4j_util_NativeTools_getObjectJni<'local>(
+pub unsafe extern "system" fn Java_org_stardustmodding_rs4j_util_NativeTools_getObjectJni<
+    'local,
+>(
     mut env: JNIEnv<'local>,
     class: JClass<'local>,
     ptr: jlong,

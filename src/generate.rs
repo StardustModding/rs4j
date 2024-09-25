@@ -1,9 +1,6 @@
 //! Rust bindings generator
 
-use crate::{
-    codegen::gen::{gen_class, Generator},
-    parser::expr::Expr,
-};
+use crate::{class::JavaClassBuilder, codegen::gen::Generator, parser::expr::Expr};
 use anyhow::Result;
 use std::{
     fs::{create_dir_all, File},
@@ -17,7 +14,10 @@ pub fn gen_code(gen: Generator, exprs: Vec<Expr>, out_file: PathBuf) -> Result<(
 
     for expr in exprs {
         if let Expr::Class(class) = expr {
-            data.push_str(&gen_class(&gen, class)?);
+            let build = JavaClassBuilder::new(class.name.ident_strict()?, &gen.package).of(class);
+
+            // data.push_str(&gen_class(&gen, class)?);
+            data.push_str(&format!("{}\n\n", build.rust_code()));
         }
     }
 

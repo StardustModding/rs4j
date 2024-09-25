@@ -1,5 +1,7 @@
 //! Arguments
 
+use crate::parser::{expr::Expr, ty::TypeExpr};
+
 use super::ty::Type;
 
 /// A function argument.
@@ -18,4 +20,29 @@ pub struct FunctionArg {
 
     /// Does it need a `.into()`?
     pub into: bool,
+}
+
+impl FunctionArg {
+    /// Get the reference for Java
+    pub fn java_name(&self) -> String {
+        if self.ty.kind.is_primitive() {
+            self.name.clone()
+        } else {
+            format!("{}.getPointer()", self.name)
+        }
+    }
+}
+
+impl From<(Expr, TypeExpr, bool, bool, bool)> for FunctionArg {
+    fn from((name, ty, borrow, mutable, into): (Expr, TypeExpr, bool, bool, bool)) -> Self {
+        let name = name.ident().unwrap();
+
+        Self {
+            name,
+            ty: ty.into(),
+            borrow,
+            mutable,
+            into,
+        }
+    }
 }

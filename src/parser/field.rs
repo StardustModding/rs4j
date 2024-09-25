@@ -1,6 +1,6 @@
 //! The module for [`FieldExpr`]s.
 
-use super::expr::Expr;
+use super::{expr::Expr, ty::TypeExpr};
 
 /// A field.
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Default, Hash)]
@@ -9,5 +9,5 @@ pub struct FieldExpr {
     pub name: Box<Expr>,
 
     /// The type of this field.
-    pub ty: Box<Expr>,
+    pub ty: TypeExpr,
 }

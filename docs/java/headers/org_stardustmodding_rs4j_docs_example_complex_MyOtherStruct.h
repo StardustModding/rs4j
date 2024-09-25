@@ -49,6 +49,30 @@ JNIEXPORT void JNICALL Java_org_stardustmodding_rs4j_docs_example_complex_MyOthe
 
 /*
  * Class:     org_stardustmodding_rs4j_docs_example_complex_MyOtherStruct
+ * Method:    jni_say
+ * Signature: (JLjava/lang/String;)V
+ */
+JNIEXPORT void JNICALL Java_org_stardustmodding_rs4j_docs_example_complex_MyOtherStruct_jni_1say
+  (JNIEnv *, jclass, jlong, jstring);
+
+/*
+ * Class:     org_stardustmodding_rs4j_docs_example_complex_MyOtherStruct
+ * Method:    jni_say_only
+ * Signature: (JLjava/lang/String;)V
+ */
+JNIEXPORT void JNICALL Java_org_stardustmodding_rs4j_docs_example_complex_MyOtherStruct_jni_1say_1only
+  (JNIEnv *, jclass, jlong, jstring);
+
+/*
+ * Class:     org_stardustmodding_rs4j_docs_example_complex_MyOtherStruct
+ * Method:    jni_say_with
+ * Signature: (JJLjava/lang/String;)V
+ */
+JNIEXPORT void JNICALL Java_org_stardustmodding_rs4j_docs_example_complex_MyOtherStruct_jni_1say_1with
+  (JNIEnv *, jclass, jlong, jlong, jstring);
+
+/*
+ * Class:     org_stardustmodding_rs4j_docs_example_complex_MyOtherStruct
  * Method:    jni_init_new
  * Signature: ()J
  */

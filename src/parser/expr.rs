@@ -4,7 +4,9 @@ use anyhow::Result;
 
 use crate::prelude::{IntoJavaType, RustTypes};
 
-use super::{bound::BoundExpr, class::ClassExpr, field::FieldExpr, func::FunctionExpr, ty::TypeExpr};
+use super::{
+    bound::BoundExpr, class::ClassExpr, field::FieldExpr, func::FunctionExpr, ty::TypeExpr,
+};
 
 /// An expression.
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Default, Hash)]
@@ -38,19 +40,12 @@ impl Expr {
         if let Self::Identifier(val) = self {
             Ok(val.clone())
         } else if let Self::Type(val) = self {
-            if let Some(generics) = *val.generics.clone() {
-                let generics = generics
-                    .iter()
-                    .map(|v| v.ident().unwrap())
-                    .collect::<Vec<String>>()
-                    .join(", ");
-
-                Ok(format!("{}<{}>", val.id.ident()?, generics))
-            } else {
-                Ok(val.id.ident()?)
-            }
+            val.as_rust()
         } else {
-            Err(anyhow!("Expected Self::Identifier(_), got {:?}", self))
+            Err(anyhow!(
+                "Expected Self::Identifier(_) or Self::Type(_), got {:?}",
+                self
+            ))
         }
     }
 
@@ -62,7 +57,7 @@ impl Expr {
             if let Some(generics) = *val.generics.clone() {
                 let generics = generics
                     .iter()
-                    .map(|v| v.ident_java().unwrap())
+                    .map(|v| v.as_java().unwrap())
                     .collect::<Vec<String>>()
                     .join(", ");
 

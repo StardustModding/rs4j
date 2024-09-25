@@ -223,7 +223,6 @@ impl BindgenConfig {
         Ok(())
     }
 
-    #[cfg(feature = "copy")]
     /// Copy generated files to a directory, overwriting existing files.
     pub fn copy_to(self, dir: impl Into<PathBuf>) -> Result<Self> {
         let dir: PathBuf = dir.into();

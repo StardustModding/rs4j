@@ -3,7 +3,7 @@
 pub mod bound;
 pub mod class;
 pub mod expr;
+pub mod field;
 pub mod func;
 pub mod parser;
 pub mod ty;
-pub mod field;

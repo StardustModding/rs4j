@@ -13,6 +13,7 @@ pub fn gen_function(
     FunctionExpr {
         is_mut,
         is_static,
+        is_init: _,
         name,
         source,
         args: fn_args,
@@ -25,7 +26,12 @@ pub fn gen_function(
 ) -> Result<String> {
     let pkg = gen.jni_pkg();
     let fn_name_id = name.ident()?;
-    let fn_name = format!("Java_{}_{}_jni_1{}", pkg, class.name.ident()?, fn_name_id.replace("_", "_1"));
+    let fn_name = format!(
+        "Java_{}_{}_jni_1{}",
+        pkg,
+        class.name.ident()?,
+        fn_name_id.replace("_", "_1")
+    );
     let rust_fn_name = rust_name.unwrap_or(Expr::Identifier(fn_name_id)).ident()?;
     let src = source.unwrap_or(class.real_name.clone().0).ident()?;
     let cname = class.ident_rust()?;
@@ -47,7 +53,7 @@ pub fn gen_function(
             "{}: {}{}",
             name.ident_strict()?,
             borrow,
-            ty.ident()?
+            ty.as_rust()?
         ));
 
         if into {
@@ -92,16 +98,19 @@ pub fn gen_function(
 )]";
 
     let code = if is_static {
-        format!("{function_head}
+        format!(
+            "{function_head}
 pub unsafe extern \"system\" fn {fn_name}<'local{generics}>(
     mut env: JNIEnv<'local>,
     class: objects::JClass<'local>{args}
 ) -> jlong{bounds} {{
     {src}::{rust_fn_name}({args_names}).as_java_ptr() as u64 as i64
-}}")
+}}"
+        )
     } else {
         if is_mut {
-            format!("{function_head}
+            format!(
+                "{function_head}
 pub unsafe extern \"system\" fn {fn_name}<'local{generics}>(
     mut env: JNIEnv<'local>,
     class: objects::JClass<'local>,
@@ -109,9 +118,11 @@ pub unsafe extern \"system\" fn {fn_name}<'local{generics}>(
 ) -> jlong{bounds} {{
     let this: &mut {cname} = jlong_to_pointer::<{cname}>(this).as_mut().unwrap();
     {src}::{rust_fn_name}(this{args_names}).as_java_ptr() as u64 as i64
-}}")
+}}"
+            )
         } else if is_consumed {
-            format!("{function_head}
+            format!(
+                "{function_head}
 pub unsafe extern \"system\" fn {fn_name}<'local{generics}>(
     mut env: JNIEnv<'local>,
     class: objects::JClass<'local>,
@@ -120,9 +131,11 @@ pub unsafe extern \"system\" fn {fn_name}<'local{generics}>(
     let this: &{cname} = jlong_to_pointer::<{cname}>(this).as_mut().unwrap();
     let this = this.clone();
     {src}::{rust_fn_name}(this{args_names}).as_java_ptr() as u64 as i64
-}}")
+}}"
+            )
         } else {
-            format!("{function_head}
+            format!(
+                "{function_head}
 pub unsafe extern \"system\" fn {fn_name}<'local{generics}>(
     mut env: JNIEnv<'local>,
     class: objects::JClass<'local>,
@@ -130,7 +143,8 @@ pub unsafe extern \"system\" fn {fn_name}<'local{generics}>(
 ) -> jlong{bounds} {{
     let this: &{cname} = jlong_to_pointer::<{cname}>(this).as_mut().unwrap();
     {src}::{rust_fn_name}(this{args_names}).as_java_ptr() as u64 as i64
-}}")
+}}"
+            )
         }
     };
 
