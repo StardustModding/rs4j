@@ -16,7 +16,7 @@ auto-compile your code.
 You can add the package to your build script by running:
 
 ```sh
-cargo add rs4j --build --features build,copy
+cargo add rs4j --build --features build
 ```
 
 You will also need to make sure you have `rs4j` as a normal dependency:
@@ -100,7 +100,7 @@ fn main() -> Result<()> {
 
 [features]
 default = []
-post-build = ["rs4j/build", "rs4j/copy", "anyhow"]
+post-build = ["rs4j/build", "anyhow"]
 
 [[bin]]
 name = "post-build"
