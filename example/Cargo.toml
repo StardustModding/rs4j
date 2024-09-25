@@ -8,7 +8,7 @@ crate-type = ["cdylib"]
 
 [features]
 default = []
-post-build = ["anyhow"]
+post-build = ["anyhow", "rs4j/build"]
 
 [[bin]]
 name = "post-build"
@@ -21,4 +21,4 @@ rs4j = { path = ".." }
 
 [build-dependencies]
 anyhow = "1.0.89"
-rs4j = { path = ".." }
+rs4j = { path = "..", features = ["build"] }

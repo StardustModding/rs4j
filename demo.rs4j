@@ -1,4 +1,0 @@
-class Duration {
-    [new] static fn create(secs: u64, nanos: u32) -> Duration;
-    fn as_secs() -> u64;
-};

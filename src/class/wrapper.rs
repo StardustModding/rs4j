@@ -1,5 +1,7 @@
 //! Wrapper methods.
 
+use convert_case::{Case, Casing};
+
 use crate::{class::ty::TypeKind, if_else, parser::func::FunctionExpr};
 
 use super::{arg::FunctionArg, ctx::ClassCtx, ty::Type};
@@ -47,6 +49,10 @@ impl WrapperMethod {
         let mut args = Vec::new();
         let mut args_nt = Vec::new();
 
+        if !self.is_static {
+            args_nt.push("__ptr".into());
+        }
+
         for arg in &self.args {
             args.push(format!("{} {}", arg.ty.full_type_java(), arg.name));
             args_nt.push(arg.java_name());
@@ -61,21 +67,23 @@ impl WrapperMethod {
             );
         }
 
+        let c_name = name.to_case(Case::Camel);
+
         if self.is_mut {
             if self.ret.kind.is_primitive() {
                 if self.ret.kind == TypeKind::Void {
-                    format!("    public{static_code}{generics} {ret} {name}({args}) {{\n        {native}({args_nt});\n        if (__parent != null) {{\n            __parent.updateField(__parentField, __ptr);\n        }}\n    }}")
+                    format!("    public{static_code}{generics} {ret} {c_name}({args}) {{\n        {native}({args_nt});\n        if (__parent != null) {{\n            __parent.updateField(__parentField, __ptr);\n        }}\n    }}")
                 } else {
-                    format!("    public{static_code}{generics} {ret} {name}({args}) {{\n        {ret} val = {native}({args_nt});\n        if (__parent != null) {{\n            __parent.updateField(__parentField, __ptr);\n        }}\n        return val;\n    }}")
+                    format!("    public{static_code}{generics} {ret} {c_name}({args}) {{\n        {ret} val = {native}({args_nt});\n        if (__parent != null) {{\n            __parent.updateField(__parentField, __ptr);\n        }}\n        return val;\n    }}")
                 }
             } else {
-                format!("    public{static_code}{generics} {ret} {name}({args}) {{\n        long val = {native}({args_nt});        if (__parent != null) {{\n            __parent.updateField(__parentField, __ptr);\n        }}\n        {return_code}{convert}(val);\n    }}")
+                format!("    public{static_code}{generics} {ret} {c_name}({args}) {{\n        long val = {native}({args_nt});        if (__parent != null) {{\n            __parent.updateField(__parentField, __ptr);\n        }}\n        {return_code}{convert}(val);\n    }}")
             }
         } else {
             if self.ret.kind.is_primitive() {
-                format!("    public{static_code}{generics} {ret} {name}({args}) {{\n        {return_code}{native}({args_nt});\n    }}")
+                format!("    public{static_code}{generics} {ret} {c_name}({args}) {{\n        {return_code}{native}({args_nt});\n    }}")
             } else {
-                format!("    public{static_code}{generics} {ret} {name}({args}) {{\n        long val = {native}({args_nt});\n        {return_code}{convert}(val);\n    }}")
+                format!("    public{static_code}{generics} {ret} {c_name}({args}) {{\n        long val = {native}({args_nt});\n        {return_code}{convert}(val);\n    }}")
             }
         }
     }

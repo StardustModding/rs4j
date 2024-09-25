@@ -11,3 +11,6 @@ pub const NATIVE_TOOLS: &str = include_str!("NativeTools.java");
 
 /// The parent class
 pub const PARENT_CLASS: &str = include_str!("ParentClass.java");
+
+/// The native class
+pub const NATIVE_CLASS: &str = include_str!("NativeClass.java");

@@ -1,0 +1,7 @@
+class MyStruct {
+    field a: String;
+    field b: i32;
+    field c: f64;
+
+    static init fn new() -> Self;
+};

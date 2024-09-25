@@ -1,6 +1,6 @@
 //! The module for [`JavaClassBuilder`]s.
 
-use base::{free_method_java, free_method_java_wrapper};
+use base::{free_method_java, free_method_java_wrapper, free_method_rust};
 use ctx::ClassCtx;
 use field::Field;
 use native::NativeMethod;
@@ -48,6 +48,7 @@ impl JavaClassBuilder {
                 "import java.util.*;".into(),
                 "import org.stardustmodding.rs4j.util.NativeTools;".into(),
                 "import org.stardustmodding.rs4j.util.ParentClass;".into(),
+                "import org.stardustmodding.rs4j.util.NativeClass;".into(),
             ],
             fields: Vec::new(),
             native_methods: Vec::new(),
@@ -124,7 +125,7 @@ impl JavaClassBuilder {
         let mut update_fields = Vec::new();
 
         let head = format!(
-            "package {pkg};\n\n{imports}\n\npublic class {class} implements ParentClass {{\n"
+            "package {pkg};\n\n{imports}\n\npublic class {class} implements ParentClass, NativeClass {{\n"
         );
 
         for func in &self.native_methods {
@@ -138,14 +139,14 @@ impl JavaClassBuilder {
         for field in &self.fields {
             let name = &field.name;
 
-            fields.push(field.java_setter());
-            fields.push(field.java_getter());
+            natives.push(field.java_setter());
+            natives.push(field.java_getter());
 
             fields.push(field.java_setter_wrapper());
             fields.push(field.java_getter_wrapper());
 
             if !field.is_primitive() {
-                update_fields.push(format!("        if (field == \"{name}\") {{\n            __ptr = jni_set_{name}(pointer);\n        }}"));
+                update_fields.push(format!("        if (field == \"{name}\") {{\n            __ptr = jni_set_{name}(__ptr, pointer);\n        }}"));
             }
         }
 
@@ -180,14 +181,14 @@ impl JavaClassBuilder {
     }}"
         );
 
-        let get_ptr = "    public long getPointer() {\n        return __ptr;\n    }";
+        let get_ptr = "    @Override\n    public long getPointer() {\n        return __ptr;\n    }";
 
         let update = format!(
             "    @Override\n    public void updateField(String field, long pointer) {{\n{}\n    }}",
             update_fields.join("\n")
         );
 
-        format!("{head}{natives}\n{vars}\n{wrappers}\n{fields}\n{inits}\n{froms}\n{get_ptr}\n{update}\n}}")
+        format!("{head}{natives}\n\n{vars}\n\n{wrappers}\n\n{fields}\n\n{inits}\n\n{froms}\n\n{get_ptr}\n\n{update}\n}}")
     }
 
     /// Generate rust bindgen code
@@ -203,6 +204,8 @@ impl JavaClassBuilder {
         for m in &self.native_methods {
             code.push(m.rust_code(&cx));
         }
+
+        code.push(free_method_rust(&cx, &self.fields));
 
         format!("{}\n{}", self.create_wrapper(), code.join("\n\n"))
     }
@@ -256,10 +259,10 @@ impl JavaClassBuilder {
         let cx = self.new_context();
 
         for native in &self.native_methods {
-            impls.push(native.rust_code_wrapper(&cx));
+            impls.push(native.rust_code_wrapper(&cx, &self.fields));
         }
 
-        let impl_ = format!("impl __JNI_{} {{{}\n}}\n", self.name, impls.join("\n\n"));
+        let impl_ = format!("impl __JNI_{} {{\n{}\n}}\n", self.name, impls.join("\n\n"));
 
         format!("{}\n\n{}", struct_, impl_)
     }

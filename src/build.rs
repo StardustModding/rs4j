@@ -7,9 +7,8 @@ use glob::glob;
 use regex::Regex;
 
 use crate::{
-    codegen::{gen::Generator, java::gen_java_code},
+    codegen::{gen::Generator, java::gen_java_code, rust::gen_rust_code},
     equals_throw,
-    generate::gen_code,
     parser::parser::classes,
 };
 
@@ -181,7 +180,7 @@ impl BindgenConfig {
             exprs.append(&mut classes(data.as_str())?);
         }
 
-        gen_code(gen.clone(), exprs.clone(), self.bindings.clone())?;
+        gen_rust_code(gen.clone(), exprs.clone(), self.bindings.clone())?;
         gen_java_code(gen.clone(), exprs, self.output.clone())?;
 
         Ok(())

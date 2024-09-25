@@ -163,16 +163,16 @@ impl TypeKind {
     /// Get the type's name in Java.
     pub fn java_name(&self) -> String {
         match self {
-            Self::Void => "Void".into(),
+            Self::Void => "void".into(),
             Self::String => "String".into(),
-            Self::I8 | Self::U8 => "Byte".into(),
-            Self::I16 | Self::U16 => "Short".into(),
-            Self::I32 | Self::U32 => "Integer".into(),
-            Self::I64 | Self::U64 => "Long".into(),
-            Self::F32 => "Float".into(),
-            Self::F64 => "Double".into(),
-            Self::Bool => "Boolean".into(),
-            Self::Char => "Char".into(),
+            Self::I8 | Self::U8 => "byte".into(),
+            Self::I16 | Self::U16 => "short".into(),
+            Self::I32 | Self::U32 => "int".into(),
+            Self::I64 | Self::U64 => "long".into(),
+            Self::F32 => "float".into(),
+            Self::F64 => "double".into(),
+            Self::Bool => "boolean".into(),
+            Self::Char => "char".into(),
             Self::Other(o) => o.to_owned(),
         }
     }
@@ -180,7 +180,7 @@ impl TypeKind {
     /// Get the type's name in Java.
     pub fn native_name(&self) -> String {
         match self {
-            Self::Other(_) => "Long".into(),
+            Self::Other(_) => "long".into(),
             _ => self.java_name(),
         }
     }

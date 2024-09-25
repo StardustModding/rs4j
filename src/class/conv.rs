@@ -11,10 +11,13 @@ pub fn conversion_method(var: impl AsRef<str>, ty: &TypeKind, mutable: bool) -> 
 
     match ty {
         TypeKind::String => Some(format!(
-            "let {mut_}{} = env.get_string(&{}).unwrap().to_str().unwrap().to_string();",
+            "    let {mut_}{} = env.get_string(&{}).unwrap().to_str().unwrap().to_string();",
             var, var
         )),
-        TypeKind::Other(v) => Some(format!("let {} = &{mut_}*({} as *mut {});", var, var, v)),
+        TypeKind::Other(v) => Some(format!(
+            "    let {} = &{mut_}*({} as *mut {});",
+            var, var, v
+        )),
         _ => None,
     }
 }

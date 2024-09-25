@@ -37,7 +37,11 @@ impl Field {
         let name = format!("jni_set_{}", &self.name);
         let ty = self.ty.full_type_java();
 
-        format!("    private static native long {name}(long ptr, {ty} value);\n")
+        if self.is_primitive() {
+            format!("    private static native long {name}(long ptr, {ty} value);")
+        } else {
+            format!("    private static native long {name}(long ptr, long value);")
+        }
     }
 
     /// Generate Java wrapper code for a setter.
@@ -46,7 +50,11 @@ impl Field {
         let name = format!("set_{}", &self.name).to_case(Case::Camel);
         let ty = self.ty.full_type_java();
 
-        format!("    public static void {name}({ty} value) {{\n        {native}(__ptr, value);\n        if (__parent != null) {{\n            __parent.updateField(__parentField, __ptr);\n        }}\n    }}")
+        if self.is_primitive() {
+            format!("    public void {name}({ty} value) {{\n        __ptr = {native}(__ptr, value);\n\n        if (__parent != null) {{\n            __parent.updateField(__parentField, __ptr);\n        }}\n    }}")
+        } else {
+            format!("    public void {name}({ty} value) {{\n        __ptr = {native}(__ptr, value.getPointer());\n\n        if (__parent != null) {{\n            __parent.updateField(__parentField, __ptr);\n        }}\n    }}")
+        }
     }
 
     /// Generate Java code for a getter.
@@ -54,7 +62,11 @@ impl Field {
         let name = format!("jni_get_{}", &self.name);
         let ty = self.ty.full_type_java();
 
-        format!("    private static native {ty} {name}(long ptr);\n")
+        if self.is_primitive() {
+            format!("    private static native {ty} {name}(long ptr);")
+        } else {
+            format!("    private static native long {name}(long ptr);")
+        }
     }
 
     /// Generate Java wrapper code for a getter.
@@ -65,9 +77,9 @@ impl Field {
         let ty = self.ty.full_type_java();
 
         if self.is_primitive() {
-            format!("    public static {ty} {name}() {{\n        return {native}(__ptr);\n    }}")
+            format!("    public {ty} {name}() {{\n        return {native}(__ptr);\n    }}")
         } else {
-            format!("    public static {ty} {name}() {{\n        return {ty}.from({native}(__ptr), this, {field});\n    }}")
+            format!("    public {ty} {name}() {{\n        return {ty}.from({native}(__ptr), this, \"{field}\");\n    }}")
         }
     }
 

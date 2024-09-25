@@ -3,6 +3,7 @@
 use super::{
     arg::FunctionArg,
     ctx::ClassCtx,
+    field::Field,
     ty::{Type, TypeKind},
 };
 use crate::{class::conv::conversion_method, if_else, parser::func::FunctionExpr};
@@ -40,6 +41,10 @@ impl NativeMethod {
         let ret = self.ret.kind.native_name();
         let mut args = Vec::new();
 
+        if !self.is_static {
+            args.push("long ptr".into());
+        }
+
         for arg in &self.args {
             args.push(format!("{} {}", arg.ty.kind.native_name(), arg.name));
         }
@@ -57,7 +62,11 @@ impl NativeMethod {
     pub fn rust_code(&self, cx: &ClassCtx) -> String {
         let class = cx.name();
         let method = &self.name;
-        let name = cx.method_name(format!("jni_{}", self.name));
+        let name = cx.method_name(if_else!(
+            self.is_init,
+            format!("jni_init_{}", self.name),
+            format!("jni_{}", self.name)
+        ));
         let mut args = Vec::new();
         let mut args_nt = Vec::new();
 
@@ -71,7 +80,12 @@ impl NativeMethod {
                     args_nt.push(format!("&{}", arg.name.clone()));
                 }
             } else {
-                args_nt.push(arg.name.clone());
+                match arg.ty.kind {
+                    TypeKind::String | TypeKind::Other(_) => {
+                        args_nt.push(format!("{}.clone()", arg.name.clone()))
+                    }
+                    _ => args_nt.push(arg.name.clone()),
+                }
             }
         }
 
@@ -82,7 +96,7 @@ impl NativeMethod {
         let mut conversions = Vec::new();
 
         if !self.is_static {
-            conversions.push(format!("let {mut_}it = &mut *(ptr as *mut {class});"));
+            conversions.push(format!("let it = &{mut_}*(ptr as *mut {class});"));
         }
 
         for arg in &self.args {
@@ -91,10 +105,11 @@ impl NativeMethod {
             }
         }
 
-        let base_args = if self.is_static {
-            "mut env: JNIEnv<'local>, class: JClass<'local>, ptr: jlong"
-        } else {
+        // Native methods are ALWAYS static
+        let base_args = if self.is_init {
             "mut env: JNIEnv<'local>, obj: JObject<'local>"
+        } else {
+            "mut env: JNIEnv<'local>, class: JClass<'local>, ptr: jlong"
         };
 
         let ret = self.ret.kind.jni_name();
@@ -120,7 +135,7 @@ impl NativeMethod {
             format!(
                 "{head}
 pub unsafe extern \"system\" fn Java_{name}<'local>({base_args}, {args}) -> {ret} {{
-    let it = {class}::new();
+    let it = {class}::__wrapped_{method}({args_nt});
     (Box::leak(Box::new(it)) as *mut {class}) as jlong
 }}"
             )
@@ -148,11 +163,7 @@ pub unsafe extern \"system\" fn Java_{name}<'local>({base_args}, {args}) -> {ret
     }
 
     /// Generate the impl for the wrapper struct.
-    pub fn rust_code_wrapper(&self, cx: &ClassCtx) -> String {
-        if self.is_init {
-            return String::new();
-        }
-
+    pub fn rust_code_wrapper(&self, cx: &ClassCtx, fields: &Vec<Field>) -> String {
         let class = &cx.name;
         let method = &self.name;
         let mut args = Vec::new();
@@ -166,7 +177,7 @@ pub unsafe extern \"system\" fn Java_{name}<'local>({base_args}, {args}) -> {ret
             args.push(format!(
                 "{}: {borrow}{mut_}{}",
                 arg.name,
-                arg.ty.kind.jni_arg_name()
+                arg.ty.kind.rust_name()
             ));
 
             args_nt.push(arg.name.clone());
@@ -177,9 +188,30 @@ pub unsafe extern \"system\" fn Java_{name}<'local>({base_args}, {args}) -> {ret
         let args_nt = args_nt.join(", ");
 
         if self.is_static {
-            format!("    pub fn __wrapped_{method}({args}) -> {ret} {{\n        {class}::{method}({args_nt})\n    }}")
+            if self.is_init {
+                let mut field_setters = Vec::new();
+
+                for field in fields {
+                    if field.is_primitive() {
+                        field_setters
+                            .push(format!("            {0}: base.{0}.clone(),", field.name));
+                    } else {
+                        field_setters.push(format!(
+                            "            {0}: Box::leak(Box::new(base.{0})) as *mut {1},",
+                            field.name,
+                            field.ty.full_type()
+                        ));
+                    }
+                }
+
+                let field_setters = field_setters.join("\n");
+
+                format!("    pub unsafe fn __wrapped_{method}({args}) -> Self {{\n        let base = {class}::{method}({args_nt});\n\n        Self {{\n{field_setters}\n        }}\n    }}")
+            } else {
+                format!("    pub unsafe fn __wrapped_{method}({args}) -> {ret} {{\n        {class}::{method}({args_nt})\n    }}")
+            }
         } else {
-            format!("    pub fn __wrapped_{method}(&{m_mut}self, {args}) -> {ret} {{\n        self.to_rust().{method}({args_nt})\n    }}")
+            format!("    pub unsafe fn __wrapped_{method}(&{m_mut}self, {args}) -> {ret} {{\n        self.to_rust().{method}({args_nt})\n    }}")
         }
     }
 }
