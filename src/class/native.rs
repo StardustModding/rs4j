@@ -183,29 +183,53 @@ impl NativeMethod {
 
         if !self.ret.kind.is_primitive() {
             let rt = self.ret.full_type();
+            let j = if_else!(
+                cx.generics
+                    .iter()
+                    .find(|v| v.name == self.ret.kind.rust_name())
+                    .is_none(),
+                "__JNI_",
+                ""
+            );
 
             if self.is_consumed {
                 cpost.push_str("let val = ");
                 cpost2.push_str(&format!(
-                    ";\n    (Box::leak(Box::new(val)) as *mut {rt}) as jlong"
+                    ";\n    (Box::leak(Box::new(val)) as *mut {j}{rt}) as jlong"
                 ));
             } else {
                 post.push_str("let val = ");
                 post2.push_str(&format!(
-                    ";\n    (Box::leak(Box::new(val)) as *mut {rt}) as jlong"
+                    ";\n    (Box::leak(Box::new(val)) as *mut {j}{rt}) as jlong"
                 ));
             }
         }
 
         if self.is_init {
-            format!(
-                "{head}
+            if self.is_optional {
+                format!(
+                    "{head}
 pub unsafe extern \"system\" fn Java_{name}<'local, {generics}>({base_args}, {args}) -> {ret} {{
     {pre}
     let it = {class}::__wrapped_{method}({args_nt});
-    (Box::leak(Box::new(it)) as *mut {class_c}) as jlong
+
+    if let Some(it) = it {{
+        (Box::leak(Box::new(it)) as *mut {class_c}) as {ret}
+    }} else {{
+        JObject::null().as_raw() as {ret}
+    }}
 }}"
-            )
+                )
+            } else {
+                format!(
+                    "{head}
+pub unsafe extern \"system\" fn Java_{name}<'local, {generics}>({base_args}, {args}) -> {ret} {{
+    {pre}
+    let it = {class}::__wrapped_{method}({args_nt});
+    (Box::leak(Box::new(it)) as *mut {class_c}) as {ret}
+}}"
+                )
+            }
         } else {
             if self.is_static {
                 if self.is_optional {
@@ -214,7 +238,13 @@ pub unsafe extern \"system\" fn Java_{name}<'local, {generics}>({base_args}, {ar
 pub unsafe extern \"system\" fn Java_{name}<'local, {generics}>({base_args}, {args}) -> {ret} {{
     {pre}
 
-    {post}{class}::__wrapped_{method}({args_nt}).unwrap_or_default(){post2}
+    let val = {class}::__wrapped_{method}({args_nt});
+
+    if let Some(val) = val {{
+        {post}val{post2}
+    }} else {{
+        JObject::null().as_raw() as {ret}
+    }}
 }}"
                     )
                 } else {
@@ -247,9 +277,14 @@ pub unsafe extern \"system\" fn Java_{name}<'local, {generics}>({base_args}, {ar
 
     let val = {post}it.__wrapped_{method}({args_nt}).unwrap_or_default(){post2};
     let it = Box::from_raw(ptr as *mut {class_c});
+
     {frees}
 
-    {cpost}val{cpost2}
+    if let Some(val) = val {{
+        {cpost}val{cpost2}
+    }} else {{
+        JObject::null().as_raw() as {ret}
+    }}
 }}"
                         )
                     } else {
@@ -273,7 +308,13 @@ pub unsafe extern \"system\" fn Java_{name}<'local, {generics}>({base_args}, {ar
 pub unsafe extern \"system\" fn Java_{name}<'local, {generics}>({base_args}, {args}) -> {ret} {{
     {pre}
 
-    {post}it.__wrapped_{method}({args_nt}).unwrap_or_default(){post2}
+    let val = it.__wrapped_{method}({args_nt});
+
+    if let Some(val) = val {{
+        {post}val{post2}
+    }} else {{
+        JObject::null().as_raw() as {ret}
+    }}
 }}"
                         )
                     } else {
@@ -292,7 +333,7 @@ pub unsafe extern \"system\" fn Java_{name}<'local, {generics}>({base_args}, {ar
     }
 
     /// Generate the impl for the wrapper struct.
-    pub fn rust_code_wrapper(&self, cx: &ClassCtx, fields: &Vec<Field>) -> String {
+    pub fn rust_code_wrapper(&self, cx: &ClassCtx) -> String {
         let head = "#[allow(
         unused_mut,
         unused_variables,
@@ -341,42 +382,46 @@ pub unsafe extern \"system\" fn Java_{name}<'local, {generics}>({base_args}, {ar
         let args = args.join(", ");
         let args_nt = args_nt.join(", ");
 
+        let mut pre = if_else!(self.boxed, "Box::new(", "").to_string();
+        let mut post = if_else!(self.boxed, ")", "").to_string();
+
+        if !self.ret.kind.is_primitive()
+            && cx
+                .generics
+                .iter()
+                .find(|v| v.name == self.ret.kind.rust_name())
+                .is_none()
+        {
+            ret = format!("__JNI_{}", ret);
+
+            pre.push_str(&format!("__JNI_{}::of(", self.ret.kind.rust_name()));
+            post.push_str(")");
+        }
+
         if self.is_optional {
             ret = format!("Option<{}>", ret);
         }
 
-        let pre = if_else!(self.boxed, "Box::new(", "");
-        let post = if_else!(self.boxed, ")", "");
-
         if self.is_static {
             if self.is_init {
-                let mut field_setters = Vec::new();
-
-                for field in fields {
-                    if field.is_primitive() {
-                        field_setters
-                            .push(format!("            {0}: base.{0}.clone(),", field.name));
-                    } else {
-                        field_setters.push(format!(
-                            "            {0}: Box::leak(Box::new(base.{0})) as *mut {1},",
-                            field.name,
-                            field.ty.full_type()
-                        ));
-                    }
+                if self.is_optional {
+                    format!("    {head}\n    pub unsafe fn __wrapped_{method}({args}) -> Option<Self> {{\n        let base = {tclass}::{tmethod}({args_nt});\n\n        if let Some(base) = base {{\n            Some(Self::of(base))\n        }} else {{\n            None\n        }}\n    }}")
+                } else {
+                    format!("    {head}\n    pub unsafe fn __wrapped_{method}({args}) -> Self {{\n        let base = {tclass}::{tmethod}({args_nt});\n\n        Self::of(base)\n    }}")
                 }
-
-                if cx.wrapped {
-                    field_setters.push(format!("            __inner: base,"));
-                }
-
-                let field_setters = field_setters.join("\n");
-
-                format!("    {head}\n    pub unsafe fn __wrapped_{method}({args}) -> Self {{\n        let base = {tclass}::{tmethod}({args_nt});\n\n        Self {{\n{field_setters}\n        }}\n    }}")
             } else {
-                format!("    {head}\n    pub unsafe fn __wrapped_{method}({args}) -> {ret} {{\n        {pre}{tclass}::{tmethod}({args_nt}){post}\n    }}")
+                if self.is_optional {
+                    format!("    {head}\n    pub unsafe fn __wrapped_{method}({args}) -> {ret} {{\n        let val = {tclass}::{tmethod}({args_nt});\n        if let Some(val) = val {{\n            Some({pre}val{post})\n        }} else {{\n            None\n        }}\n    }}")
+                } else {
+                    format!("    {head}\n    pub unsafe fn __wrapped_{method}({args}) -> {ret} {{\n        {pre}{tclass}::{tmethod}({args_nt}){post}\n    }}")
+                }
             }
         } else {
-            format!("    {head}\n    pub unsafe fn __wrapped_{method}(&{m_mut}self, {args}) -> {ret} {{\n        {pre}{tclass}::{tmethod}({args_nt}).clone(){post}\n    }}")
+            if self.is_optional {
+                format!("    {head}\n    pub unsafe fn __wrapped_{method}(&{m_mut}self, {args}) -> {ret} {{\n        let val = {tclass}::{tmethod}({args_nt});\n        if let Some(val) = val {{\n            Some({pre}val.clone(){post})\n        }} else {{\n            None\n        }}\n    }}")
+            } else {
+                format!("    {head}\n    pub unsafe fn __wrapped_{method}(&{m_mut}self, {args}) -> {ret} {{\n        {pre}{tclass}::{tmethod}({args_nt}).clone(){post}\n    }}")
+            }
         }
     }
 }

@@ -1,6 +1,6 @@
 //! The module for [`JavaClassBuilder`]s.
 
-use base::{free_method_java, free_method_java_wrapper, free_method_rust};
+use base::{free_method_java, free_method_java_wrapper, free_method_rust, of_func};
 use ctx::ClassCtx;
 use field::Field;
 use generic::TypeGeneric;
@@ -154,9 +154,12 @@ impl JavaClassBuilder {
         let mut wrappers = Vec::new();
         let mut fields = Vec::new();
         let mut update_fields = Vec::new();
+        let class_g = cx.raw_name_generics_java();
+        let class_ge = cx.raw_name_generics();
+        let g = cx.generics_java();
 
         let head = format!(
-            "package {pkg};\n\n{imports}\n\npublic class {class} implements ParentClass, NativeClass {{\n"
+            "package {pkg};\n\n{imports}\n\npublic class {class_g} implements ParentClass, NativeClass {{\n"
         );
 
         for func in &self.native_methods {
@@ -207,12 +210,12 @@ impl JavaClassBuilder {
         );
 
         let froms = format!(
-            "    public static {class} from(long ptr) {{
-        return new {class}(ptr);
+            "    public static {g} {class_ge} from(long ptr) {{
+        return new {class_ge}(ptr);
     }}
 
-    public static {class} from(long ptr, ParentClass parent, String parentField) {{
-        return new {class}(ptr, parent, parentField);
+    public static {g} {class_ge} from(long ptr, ParentClass parent, String parentField) {{
+        return new {class_ge}(ptr, parent, parentField);
     }}"
         );
 
@@ -262,6 +265,7 @@ impl JavaClassBuilder {
         missing_docs,
     )]";
 
+        let cx = self.new_context();
         let mut fields = Vec::new();
 
         let generics = self
@@ -283,7 +287,7 @@ impl JavaClassBuilder {
         let generics_nb = if_else!(generics_nb != "", format!("<{}>", generics_nb), "".into());
 
         if self.wrapped {
-            fields.push(format!("    pub __inner: {},", &self.name));
+            fields.push(format!("    pub __inner: {},", &cx.raw_name_generics()));
         }
 
         for field in &self.fields {
@@ -322,6 +326,8 @@ impl JavaClassBuilder {
             }
         }
 
+        impls.push(of_func(&cx, &self.fields));
+
         if self.wrapped {
             impls.push(format!(
                 "    {head}\n    pub unsafe fn to_rust(&self) -> {}{generics_nb} {{\n        self.__inner.clone()\n    }}",
@@ -336,10 +342,8 @@ impl JavaClassBuilder {
             ));
         }
 
-        let cx = self.new_context();
-
         for native in &self.native_methods {
-            impls.push(native.rust_code_wrapper(&cx, &self.fields));
+            impls.push(native.rust_code_wrapper(&cx));
         }
 
         let impl_ = format!(

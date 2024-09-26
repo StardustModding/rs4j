@@ -17,6 +17,23 @@ impl __JNI_MyOtherStruct {
         deprecated,
         missing_docs,
     )]
+    pub unsafe fn of(base: MyOtherStruct) -> Self {
+        Self {
+            a: base.a.clone(),
+            b: Box::leak(Box::new(base.b)) as *mut MyStruct,
+        }
+    }
+
+    #[allow(
+        unused_mut,
+        unused_variables,
+        unused_unsafe,
+        non_snake_case,
+        improper_ctypes_definitions,
+        no_mangle_generic_items,
+        deprecated,
+        missing_docs,
+    )]
     pub unsafe fn to_rust(&self) -> MyOtherStruct {
         MyOtherStruct {
             a: self.a.clone(),
@@ -37,10 +54,7 @@ impl __JNI_MyOtherStruct {
     pub unsafe fn __wrapped_new() -> Self {
         let base = MyOtherStruct::new();
 
-        Self {
-            a: base.a.clone(),
-            b: Box::leak(Box::new(base.b)) as *mut MyStruct,
-        }
+        Self::of(base)
     }
 
     #[allow(
@@ -282,6 +296,24 @@ impl __JNI_MyStruct {
         deprecated,
         missing_docs,
     )]
+    pub unsafe fn of(base: MyStruct) -> Self {
+        Self {
+            a: base.a.clone(),
+            b: base.b.clone(),
+            c: base.c.clone(),
+        }
+    }
+
+    #[allow(
+        unused_mut,
+        unused_variables,
+        unused_unsafe,
+        non_snake_case,
+        improper_ctypes_definitions,
+        no_mangle_generic_items,
+        deprecated,
+        missing_docs,
+    )]
     pub unsafe fn to_rust(&self) -> MyStruct {
         MyStruct {
             a: self.a.clone(),
@@ -303,11 +335,7 @@ impl __JNI_MyStruct {
     pub unsafe fn __wrapped_new() -> Self {
         let base = MyStruct::new();
 
-        Self {
-            a: base.a.clone(),
-            b: base.b.clone(),
-            c: base.c.clone(),
-        }
+        Self::of(base)
     }
 }
 

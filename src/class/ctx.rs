@@ -63,4 +63,56 @@ impl ClassCtx {
 
         format!("__JNI_{}{}", &self.name, generics)
     }
+
+    /// Get the name of the struct with generics
+    pub fn raw_name_generics(&self) -> String {
+        let generics = self
+            .generics
+            .iter()
+            .map(|v| v.name.to_owned())
+            .collect::<Vec<_>>()
+            .join(", ");
+
+        let generics = if_else!(generics != "", format!("<{}>", generics), "".into());
+
+        format!("{}{}", &self.name, generics)
+    }
+
+    /// Get the name of the class with generics for Java
+    pub fn raw_name_generics_java(&self) -> String {
+        let generics = self
+            .generics
+            .iter()
+            .map(|v| format!("{} extends ParentClass & NativeClass", v.name))
+            .collect::<Vec<_>>()
+            .join(", ");
+
+        let generics = if_else!(generics != "", format!("<{}>", generics), "".into());
+
+        format!("{}{}", &self.name, generics)
+    }
+
+    /// Get generics for Java
+    pub fn generics_java(&self) -> String {
+        let generics = self
+            .generics
+            .iter()
+            .map(|v| format!("{} extends ParentClass & NativeClass", v.name))
+            .collect::<Vec<_>>()
+            .join(", ");
+
+        if_else!(generics != "", format!("<{}>", generics), "".into())
+    }
+
+    /// Get generics
+    pub fn generics(&self) -> String {
+        let generics = self
+            .generics
+            .iter()
+            .map(|v| v.name.to_owned())
+            .collect::<Vec<_>>()
+            .join(", ");
+
+        if_else!(generics != "", format!("<{}>", generics), "".into())
+    }
 }
