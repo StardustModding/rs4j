@@ -1,6 +1,8 @@
 //! Class codegen context
 
-use super::JavaClassBuilder;
+use crate::if_else;
+
+use super::{generic::TypeGeneric, JavaClassBuilder};
 
 /// A codegen context for classes
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
@@ -10,6 +12,9 @@ pub struct ClassCtx {
 
     /// The package name
     pub package: String,
+
+    /// Generics
+    pub generics: Vec<TypeGeneric>,
 }
 
 impl ClassCtx {
@@ -18,6 +23,7 @@ impl ClassCtx {
         Self {
             name: class.name.clone(),
             package: class.package.clone(),
+            generics: class.generics.clone(),
         }
     }
 
@@ -38,5 +44,19 @@ impl ClassCtx {
     /// Get the name of the wrapper struct
     pub fn name(&self) -> String {
         format!("__JNI_{}", &self.name)
+    }
+
+    /// Get the name of the wrapper struct with generics
+    pub fn name_generics(&self) -> String {
+        let generics = self
+            .generics
+            .iter()
+            .map(|v| v.name.to_owned())
+            .collect::<Vec<_>>()
+            .join(", ");
+
+        let generics = if_else!(generics != "", format!("<{}>", generics), "".into());
+
+        format!("__JNI_{}{}", &self.name, generics)
     }
 }

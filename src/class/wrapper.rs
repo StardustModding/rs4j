@@ -28,6 +28,12 @@ pub struct WrapperMethod {
 
     /// Is this a constructor?
     pub is_init: bool,
+
+    /// Does this return an [`Option`]?
+    pub is_optional: bool,
+
+    /// Does it consume the object?
+    pub is_consumed: bool,
 }
 
 impl WrapperMethod {
@@ -109,6 +115,8 @@ impl From<FunctionExpr> for WrapperMethod {
             is_init: value.is_init,
             is_mut: value.is_mut,
             is_static: value.is_static,
+            is_consumed: value.is_consumed,
+            is_optional: value.is_optional,
             ret: value.ret.map(|v| v.into()).unwrap_or_default(),
         }
     }

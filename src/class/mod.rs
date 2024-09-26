@@ -3,16 +3,21 @@
 use base::{free_method_java, free_method_java_wrapper, free_method_rust};
 use ctx::ClassCtx;
 use field::Field;
+use generic::TypeGeneric;
 use native::NativeMethod;
 use wrapper::WrapperMethod;
 
-use crate::parser::{class::ClassExpr, expr::Expr, field::FieldExpr, func::FunctionExpr};
+use crate::{
+    if_else,
+    parser::{class::ClassExpr, expr::Expr, field::FieldExpr, func::FunctionExpr},
+};
 
 pub mod arg;
 pub mod base;
 pub mod conv;
 pub mod ctx;
 pub mod field;
+pub mod generic;
 pub mod native;
 pub mod ty;
 pub mod wrapper;
@@ -36,6 +41,9 @@ pub struct JavaClassBuilder {
 
     /// A list of wrapper methods.
     pub wrapper_methods: Vec<WrapperMethod>,
+
+    /// A list of generics.
+    pub generics: Vec<TypeGeneric>,
 }
 
 impl JavaClassBuilder {
@@ -53,6 +61,7 @@ impl JavaClassBuilder {
             fields: Vec::new(),
             native_methods: Vec::new(),
             wrapper_methods: Vec::new(),
+            generics: Vec::new(),
         }
     }
 
@@ -64,6 +73,22 @@ impl JavaClassBuilder {
                 self.wrapper_methods.push(expr.clone().into());
             } else if let Expr::Field(expr) = stmt {
                 self.fields.push(expr.clone().into());
+            } else if let Expr::Bound(bound) = stmt {
+                let name = bound.name.ident_strict().unwrap();
+
+                if self.generics.iter().find(|v| v.name == name).is_none() {
+                    self.generics.push(bound.clone().into());
+                }
+            }
+        }
+
+        if let Some(generics) = class.generics {
+            for item in generics {
+                let name = item.id.ident_strict().unwrap();
+
+                if self.generics.iter().find(|v| v.name == name).is_none() {
+                    self.generics.push(item.into());
+                }
             }
         }
 
@@ -137,6 +162,10 @@ impl JavaClassBuilder {
         }
 
         for field in &self.fields {
+            if field.rust {
+                continue;
+            }
+
             let name = &field.name;
 
             natives.push(field.java_setter());
@@ -197,12 +226,16 @@ impl JavaClassBuilder {
         let mut code = Vec::new();
 
         for f in &self.fields {
+            if f.rust {
+                continue;
+            }
+
             code.push(f.rust_setter(&cx));
             code.push(f.rust_getter(&cx));
         }
 
         for m in &self.native_methods {
-            code.push(m.rust_code(&cx));
+            code.push(m.rust_code(&cx, &self.fields, &self.generics));
         }
 
         code.push(free_method_rust(&cx, &self.fields));
@@ -213,6 +246,24 @@ impl JavaClassBuilder {
     /// Create the Rust code for a wrapper struct.
     pub fn create_wrapper(&self) -> String {
         let mut fields = Vec::new();
+
+        let generics = self
+            .generics
+            .iter()
+            .map(|v| format!("{}: {}", v.name, v.bounds.join(" + ")))
+            .collect::<Vec<_>>()
+            .join(", ");
+
+        let generics = if_else!(generics != "", format!("<{}>", generics), "".into());
+
+        let generics_nb = self
+            .generics
+            .iter()
+            .map(|v| v.name.to_owned())
+            .collect::<Vec<_>>()
+            .join(", ");
+
+        let generics_nb = if_else!(generics_nb != "", format!("<{}>", generics_nb), "".into());
 
         for field in &self.fields {
             if field.is_primitive() {
@@ -227,8 +278,9 @@ impl JavaClassBuilder {
         }
 
         let struct_ = format!(
-            "#[allow(non_camel_case_types)]\npub struct __JNI_{} {{\n{}\n}}",
+            "#[allow(non_camel_case_types)]\npub struct __JNI_{}{} {{\n{}\n}}",
             self.name,
+            generics,
             fields.join("\n")
         );
 
@@ -250,7 +302,7 @@ impl JavaClassBuilder {
         }
 
         impls.push(format!(
-            "    pub unsafe fn to_rust(&self) -> {} {{\n        {} {{\n{}\n        }}\n    }}",
+            "    pub unsafe fn to_rust(&self) -> {}{generics_nb} {{\n        {} {{\n{}\n        }}\n    }}",
             self.name,
             self.name,
             convert.join("\n")
@@ -262,7 +314,13 @@ impl JavaClassBuilder {
             impls.push(native.rust_code_wrapper(&cx, &self.fields));
         }
 
-        let impl_ = format!("impl __JNI_{} {{\n{}\n}}\n", self.name, impls.join("\n\n"));
+        let impl_ = format!(
+            "impl{} __JNI_{}{} {{\n{}\n}}\n",
+            generics,
+            self.name,
+            generics_nb,
+            impls.join("\n\n")
+        );
 
         format!("{}\n\n{}", struct_, impl_)
     }

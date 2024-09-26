@@ -24,15 +24,15 @@ impl __JNI_MyOtherStruct {
     }
 
     pub unsafe fn __wrapped_say_only(&self, message: String) -> () {
-        self.to_rust().say_only(message)
+        MyOtherStruct::say_only(&self.to_rust(), message).clone()
     }
 
     pub unsafe fn __wrapped_say(&self, p2: String) -> () {
-        self.to_rust().say(p2)
+        MyOtherStruct::say(&self.to_rust(), p2).clone()
     }
 
     pub unsafe fn __wrapped_say_with(&self, p1: MyStruct, p2: String) -> () {
-        self.to_rust().say_with(p1, p2)
+        MyOtherStruct::say_with(&self.to_rust(), p1, p2).clone()
     }
 }
 
@@ -137,7 +137,8 @@ pub unsafe extern "system" fn Java_com_example_MyOtherStruct_jni_1get_1b<'local>
     deprecated,
     missing_docs
 )]
-pub unsafe extern "system" fn Java_com_example_MyOtherStruct_jni_1init_1new<'local>(mut env: JNIEnv<'local>, obj: JObject<'local>, ) -> jlong {
+pub unsafe extern "system" fn Java_com_example_MyOtherStruct_jni_1init_1new<'local, >(mut env: JNIEnv<'local>, obj: JObject<'local>, ) -> jlong {
+    
     let it = __JNI_MyOtherStruct::__wrapped_new();
     (Box::leak(Box::new(it)) as *mut __JNI_MyOtherStruct) as jlong
 }
@@ -153,7 +154,7 @@ pub unsafe extern "system" fn Java_com_example_MyOtherStruct_jni_1init_1new<'loc
     deprecated,
     missing_docs
 )]
-pub unsafe extern "system" fn Java_com_example_MyOtherStruct_jni_1say_1only<'local>(mut env: JNIEnv<'local>, class: JClass<'local>, ptr: jlong, message: JString<'local>) -> () {
+pub unsafe extern "system" fn Java_com_example_MyOtherStruct_jni_1say_1only<'local, >(mut env: JNIEnv<'local>, class: JClass<'local>, ptr: jlong, message: JString<'local>) -> () {
     let it = &*(ptr as *mut __JNI_MyOtherStruct);
     let message = env.get_string(&message).unwrap().to_str().unwrap().to_string();
 
@@ -171,7 +172,7 @@ pub unsafe extern "system" fn Java_com_example_MyOtherStruct_jni_1say_1only<'loc
     deprecated,
     missing_docs
 )]
-pub unsafe extern "system" fn Java_com_example_MyOtherStruct_jni_1say<'local>(mut env: JNIEnv<'local>, class: JClass<'local>, ptr: jlong, p2: JString<'local>) -> () {
+pub unsafe extern "system" fn Java_com_example_MyOtherStruct_jni_1say<'local, >(mut env: JNIEnv<'local>, class: JClass<'local>, ptr: jlong, p2: JString<'local>) -> () {
     let it = &*(ptr as *mut __JNI_MyOtherStruct);
     let p2 = env.get_string(&p2).unwrap().to_str().unwrap().to_string();
 
@@ -189,7 +190,7 @@ pub unsafe extern "system" fn Java_com_example_MyOtherStruct_jni_1say<'local>(mu
     deprecated,
     missing_docs
 )]
-pub unsafe extern "system" fn Java_com_example_MyOtherStruct_jni_1say_1with<'local>(mut env: JNIEnv<'local>, class: JClass<'local>, ptr: jlong, p1: jlong, p2: JString<'local>) -> () {
+pub unsafe extern "system" fn Java_com_example_MyOtherStruct_jni_1say_1with<'local, >(mut env: JNIEnv<'local>, class: JClass<'local>, ptr: jlong, p1: jlong, p2: JString<'local>) -> () {
     let it = &*(ptr as *mut __JNI_MyOtherStruct);
     let p1 = &*(p1 as *mut MyStruct);
     let p2 = env.get_string(&p2).unwrap().to_str().unwrap().to_string();
@@ -199,7 +200,7 @@ pub unsafe extern "system" fn Java_com_example_MyOtherStruct_jni_1say_1with<'loc
 
 #[no_mangle]
 #[allow(unused)]
-pub unsafe extern "system" fn Java_com_example_MyOtherStruct_jni_1free<'local>(_env: JNIEnv<'local>, _class: JClass<'local>, ptr: jlong) {
+pub unsafe extern "system" fn Java_com_example_MyOtherStruct_jni_1free<'local, >(_env: JNIEnv<'local>, _class: JClass<'local>, ptr: jlong) {
     let it = Box::from_raw(ptr as *mut __JNI_MyOtherStruct);
     let _ = Box::from_raw(it.b);
 }
@@ -377,14 +378,15 @@ pub unsafe extern "system" fn Java_com_example_MyStruct_jni_1get_1c<'local>(
     deprecated,
     missing_docs
 )]
-pub unsafe extern "system" fn Java_com_example_MyStruct_jni_1init_1new<'local>(mut env: JNIEnv<'local>, obj: JObject<'local>, ) -> jlong {
+pub unsafe extern "system" fn Java_com_example_MyStruct_jni_1init_1new<'local, >(mut env: JNIEnv<'local>, obj: JObject<'local>, ) -> jlong {
+    
     let it = __JNI_MyStruct::__wrapped_new();
     (Box::leak(Box::new(it)) as *mut __JNI_MyStruct) as jlong
 }
 
 #[no_mangle]
 #[allow(unused)]
-pub unsafe extern "system" fn Java_com_example_MyStruct_jni_1free<'local>(_env: JNIEnv<'local>, _class: JClass<'local>, ptr: jlong) {
+pub unsafe extern "system" fn Java_com_example_MyStruct_jni_1free<'local, >(_env: JNIEnv<'local>, _class: JClass<'local>, ptr: jlong) {
     let it = Box::from_raw(ptr as *mut __JNI_MyStruct);
     
 }

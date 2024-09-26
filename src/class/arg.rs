@@ -5,6 +5,7 @@ use crate::parser::{expr::Expr, ty::TypeExpr};
 use super::ty::Type;
 
 /// A function argument.
+#[derive(Debug, Clone)]
 pub struct FunctionArg {
     /// The argument name.
     pub name: String,

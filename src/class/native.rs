@@ -4,6 +4,7 @@ use super::{
     arg::FunctionArg,
     ctx::ClassCtx,
     field::Field,
+    generic::TypeGeneric,
     ty::{Type, TypeKind},
 };
 use crate::{class::conv::conversion_method, if_else, parser::func::FunctionExpr};
@@ -27,6 +28,21 @@ pub struct NativeMethod {
 
     /// Is this a constructor?
     pub is_init: bool,
+
+    /// Does this return an [`Option`]?
+    pub is_optional: bool,
+
+    /// Does it consume the object?
+    pub is_consumed: bool,
+
+    /// Is there another struct this should use to call the function?
+    pub object: Option<String>,
+
+    /// Is there a custom name?
+    pub custom_name: Option<String>,
+
+    /// Does it need to be boxed?
+    pub boxed: bool,
 }
 
 impl NativeMethod {
@@ -59,14 +75,28 @@ impl NativeMethod {
     }
 
     /// Generate Rust code for this method.
-    pub fn rust_code(&self, cx: &ClassCtx) -> String {
+    pub fn rust_code(
+        &self,
+        cx: &ClassCtx,
+        fields: &Vec<Field>,
+        generics_list: &Vec<TypeGeneric>,
+    ) -> String {
         let class = cx.name();
+        let class_c = cx.name_generics();
         let method = &self.name;
+
         let name = cx.method_name(if_else!(
             self.is_init,
             format!("jni_init_{}", self.name),
             format!("jni_{}", self.name)
         ));
+
+        let generics = generics_list
+            .iter()
+            .map(|v| format!("{}: {}", v.name, v.bounds.join(" + ")))
+            .collect::<Vec<_>>()
+            .join(", ");
+
         let mut args = Vec::new();
         let mut args_nt = Vec::new();
 
@@ -84,6 +114,11 @@ impl NativeMethod {
                     TypeKind::String | TypeKind::Other(_) => {
                         args_nt.push(format!("{}.clone()", arg.name.clone()))
                     }
+                    TypeKind::U8 => args_nt.push(format!("{} as u8", arg.name.clone())),
+                    TypeKind::U16 => args_nt.push(format!("{} as u16", arg.name.clone())),
+                    TypeKind::U32 => args_nt.push(format!("{} as u32", arg.name.clone())),
+                    TypeKind::U64 => args_nt.push(format!("{} as u64", arg.name.clone())),
+                    TypeKind::Bool => args_nt.push(format!("{} == 1", arg.name.clone())),
                     _ => args_nt.push(arg.name.clone()),
                 }
             }
@@ -96,11 +131,11 @@ impl NativeMethod {
         let mut conversions = Vec::new();
 
         if !self.is_static {
-            conversions.push(format!("let it = &{mut_}*(ptr as *mut {class});"));
+            conversions.push(format!("let it = &{mut_}*(ptr as *mut {class_c});"));
         }
 
         for arg in &self.args {
-            if let Some(conv) = conversion_method(&arg.name, &arg.ty.kind, arg.mutable) {
+            if let Some(conv) = conversion_method(&arg.name, &arg.ty, arg.mutable) {
                 conversions.push(conv);
             }
         }
@@ -114,8 +149,10 @@ impl NativeMethod {
 
         let ret = self.ret.kind.jni_name();
 
-        let post = if_else!(self.ret.kind == TypeKind::String, "env.new_string(", "");
-        let post2 = if_else!(self.ret.kind == TypeKind::String, ").unwrap().as_raw()", "");
+        let mut post =
+            if_else!(self.ret.kind == TypeKind::String, "env.new_string(", "").to_string();
+        let mut post2 =
+            if_else!(self.ret.kind == TypeKind::String, ").unwrap().as_raw()", "").to_string();
 
         let head = "#[no_mangle]
 #[allow(
@@ -131,33 +168,125 @@ impl NativeMethod {
 
         let pre = conversions.join("\n");
 
+        match self.ret.kind {
+            TypeKind::U8 => post2.push_str(" as i8"),
+            TypeKind::U16 => post2.push_str(" as i16"),
+            TypeKind::U32 => post2.push_str(" as i32"),
+            TypeKind::U64 => post2.push_str(" as i64"),
+            TypeKind::Bool => post2.push_str(" as u8"),
+
+            _ => {}
+        }
+
+        let mut cpost = "".to_string();
+        let mut cpost2 = "".to_string();
+
+        if !self.ret.kind.is_primitive() {
+            let rt = self.ret.full_type();
+
+            if self.is_consumed {
+                cpost.push_str("let val = ");
+                cpost2.push_str(&format!(
+                    ";\n    (Box::leak(Box::new(val)) as *mut {rt}) as jlong"
+                ));
+            } else {
+                post.push_str("let val = ");
+                post2.push_str(&format!(
+                    ";\n    (Box::leak(Box::new(val)) as *mut {rt}) as jlong"
+                ));
+            }
+        }
+
         if self.is_init {
             format!(
                 "{head}
-pub unsafe extern \"system\" fn Java_{name}<'local>({base_args}, {args}) -> {ret} {{
+pub unsafe extern \"system\" fn Java_{name}<'local, {generics}>({base_args}, {args}) -> {ret} {{
+    {pre}
     let it = {class}::__wrapped_{method}({args_nt});
-    (Box::leak(Box::new(it)) as *mut {class}) as jlong
+    (Box::leak(Box::new(it)) as *mut {class_c}) as jlong
 }}"
             )
         } else {
             if self.is_static {
-                format!(
-                    "{head}
-pub unsafe extern \"system\" fn Java_{name}<'local>({base_args}, {args}) -> {ret} {{
+                if self.is_optional {
+                    format!(
+                        "{head}
+pub unsafe extern \"system\" fn Java_{name}<'local, {generics}>({base_args}, {args}) -> {ret} {{
+    {pre}
+
+    {post}{class}::__wrapped_{method}({args_nt}).unwrap_or_default(){post2}
+}}"
+                    )
+                } else {
+                    format!(
+                        "{head}
+pub unsafe extern \"system\" fn Java_{name}<'local, {generics}>({base_args}, {args}) -> {ret} {{
     {pre}
 
     {post}{class}::__wrapped_{method}({args_nt}){post2}
 }}"
-                )
+                    )
+                }
             } else {
-                format!(
-                    "{head}
-pub unsafe extern \"system\" fn Java_{name}<'local>({base_args}, {args}) -> {ret} {{
+                if self.is_consumed {
+                    let mut frees = Vec::new();
+
+                    for field in fields {
+                        if !field.is_primitive() {
+                            frees.push(format!("let _ = Box::from_raw(it.{});", field.name));
+                        }
+                    }
+
+                    let frees = frees.join("\n");
+
+                    if self.is_optional {
+                        format!(
+                            "{head}
+pub unsafe extern \"system\" fn Java_{name}<'local, {generics}>({base_args}, {args}) -> {ret} {{
+    {pre}
+
+    let val = {post}it.__wrapped_{method}({args_nt}).unwrap_or_default(){post2};
+    let it = Box::from_raw(ptr as *mut {class_c});
+    {frees}
+
+    {cpost}val{cpost2}
+}}"
+                        )
+                    } else {
+                        format!(
+                            "{head}
+pub unsafe extern \"system\" fn Java_{name}<'local, {generics}>({base_args}, {args}) -> {ret} {{
+    {pre}
+
+    let val = {post}it.__wrapped_{method}({args_nt}){post2};
+    let it = Box::from_raw(ptr as *mut {class_c});
+    {frees}
+
+    {cpost}val{cpost2}
+}}"
+                        )
+                    }
+                } else {
+                    if self.is_optional {
+                        format!(
+                            "{head}
+pub unsafe extern \"system\" fn Java_{name}<'local, {generics}>({base_args}, {args}) -> {ret} {{
+    {pre}
+
+    {post}it.__wrapped_{method}({args_nt}).unwrap_or_default(){post2}
+}}"
+                        )
+                    } else {
+                        format!(
+                            "{head}
+pub unsafe extern \"system\" fn Java_{name}<'local, {generics}>({base_args}, {args}) -> {ret} {{
     {pre}
 
     {post}it.__wrapped_{method}({args_nt}){post2}
 }}"
-                )
+                        )
+                    }
+                }
             }
         }
     }
@@ -166,9 +295,23 @@ pub unsafe extern \"system\" fn Java_{name}<'local>({base_args}, {args}) -> {ret
     pub fn rust_code_wrapper(&self, cx: &ClassCtx, fields: &Vec<Field>) -> String {
         let class = &cx.name;
         let method = &self.name;
+        let tclass = self.object.clone().unwrap_or(class.clone());
+        let tmethod = self.custom_name.clone().unwrap_or(method.clone());
         let mut args = Vec::new();
         let mut args_nt = Vec::new();
         let m_mut = if_else!(self.is_mut, "mut ", "");
+
+        if !self.is_static {
+            if self.is_consumed {
+                args_nt.push("self.to_rust()".into());
+            } else {
+                if self.is_mut {
+                    args_nt.push("&mut self.to_rust()".into());
+                } else {
+                    args_nt.push("&self.to_rust()".into());
+                }
+            }
+        }
 
         for arg in &self.args {
             let borrow = if_else!(arg.borrow, "&", "");
@@ -177,15 +320,22 @@ pub unsafe extern \"system\" fn Java_{name}<'local>({base_args}, {args}) -> {ret
             args.push(format!(
                 "{}: {borrow}{mut_}{}",
                 arg.name,
-                arg.ty.kind.rust_name()
+                arg.ty.full_type()
             ));
 
             args_nt.push(arg.name.clone());
         }
 
-        let ret = self.ret.full_type();
+        let mut ret = self.ret.full_type();
         let args = args.join(", ");
         let args_nt = args_nt.join(", ");
+
+        if self.is_optional {
+            ret = format!("Option<{}>", ret);
+        }
+
+        let pre = if_else!(self.boxed, "Box::new(", "");
+        let post = if_else!(self.boxed, ")", "");
 
         if self.is_static {
             if self.is_init {
@@ -206,12 +356,12 @@ pub unsafe extern \"system\" fn Java_{name}<'local>({base_args}, {args}) -> {ret
 
                 let field_setters = field_setters.join("\n");
 
-                format!("    pub unsafe fn __wrapped_{method}({args}) -> Self {{\n        let base = {class}::{method}({args_nt});\n\n        Self {{\n{field_setters}\n        }}\n    }}")
+                format!("    pub unsafe fn __wrapped_{method}({args}) -> Self {{\n        let base = {tclass}::{tmethod}({args_nt});\n\n        Self {{\n{field_setters}\n        }}\n    }}")
             } else {
-                format!("    pub unsafe fn __wrapped_{method}({args}) -> {ret} {{\n        {class}::{method}({args_nt})\n    }}")
+                format!("    pub unsafe fn __wrapped_{method}({args}) -> {ret} {{\n        {pre}{tclass}::{tmethod}({args_nt}){post}\n    }}")
             }
         } else {
-            format!("    pub unsafe fn __wrapped_{method}(&{m_mut}self, {args}) -> {ret} {{\n        self.to_rust().{method}({args_nt})\n    }}")
+            format!("    pub unsafe fn __wrapped_{method}(&{m_mut}self, {args}) -> {ret} {{\n        {pre}{tclass}::{tmethod}({args_nt}).clone(){post}\n    }}")
         }
     }
 }
@@ -229,7 +379,12 @@ impl From<FunctionExpr> for NativeMethod {
             is_init: value.is_init,
             is_mut: value.is_mut,
             is_static: value.is_static,
+            is_consumed: value.is_consumed,
+            is_optional: value.is_optional,
             ret: value.ret.map(|v| v.into()).unwrap_or_default(),
+            custom_name: value.rust_name.map(|v| v.ident_strict().unwrap()),
+            object: value.source.map(|v| v.ident_strict().unwrap()),
+            boxed: value.boxed,
         }
     }
 }

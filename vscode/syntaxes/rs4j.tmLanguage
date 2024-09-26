@@ -28,7 +28,7 @@
       <array> 
         <dict>
           <key>match</key>
-          <string>\b(fn|mut|optional|class|static|consumed|bound|field)</string>
+          <string>\b(fn|mut|optional|class|static|consumed|bound|field|init)</string>
           <key>name</key>
           <string>keyword.rs4j</string>
         </dict>

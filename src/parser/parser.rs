@@ -56,9 +56,9 @@ parser! {
 
         /// Parse a [`FieldExpr`].
         pub rule field() -> Expr
-            = [' ' | '\t' | '\n']* _ "field" _ name: identifier() _ ":"
+            = [' ' | '\t' | '\n']* _ rs: ("[" _ "rust" _ "]")? _ "field" _ name: identifier() _ ":"
             _ ty: (_type()) _ ";" _
-            { Expr::Field(FieldExpr { name: Box::new(name), ty }) }
+            { Expr::Field(FieldExpr { name: Box::new(name), ty, rust_only: rs.is_some() }) }
 
         /// Parse a function argument.
         pub rule fn_arg() -> (Expr, TypeExpr, bool, bool, bool)
@@ -72,6 +72,7 @@ parser! {
         /// Parse a [`FunctionExpr`].
         pub rule function() -> Expr
             = [' ' | '\t' | '\n']* _ rust_name: ("[" _ rust_name: identifier() _ "]" _ { rust_name })?
+            _ boxed: "boxed"? _
             _ static_: "static"? _
             _ init: "init"? _
             _ mut_: "mut"? _
@@ -87,11 +88,12 @@ parser! {
             {
                 Expr::Function(FunctionExpr {
                     generics: generics.unwrap_or_default(),
+                    boxed: boxed.is_some(),
                     is_static: static_.is_some(),
                     is_init: init.is_some(),
                     is_mut: mut_.is_some(),
-                    is_optional: optional.is_some(), // TODO
-                    is_consumed: consumed.is_some(), // TODO
+                    is_optional: optional.is_some(),
+                    is_consumed: consumed.is_some(),
                     rust_name: Box::new(rust_name),
                     name: Box::new(name),
                     source: Box::new(src),

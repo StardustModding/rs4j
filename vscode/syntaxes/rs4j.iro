@@ -3,7 +3,7 @@ file_extensions []     = rs4j;
 
 # ============== Constants ==============
 
-__KEYWORDS \= \b(fn|mut|optional|class|static|consumed|bound|field)
+__KEYWORDS \= \b(fn|mut|optional|class|static|consumed|bound|field|init)
 __IDENTIFIER \= \b([a-z_$][\w$]*)
 __TYPE_IDENT \= \b([A-Z][\w\$]*)
 __PUNCT \= \b([;.,:&-><]+)

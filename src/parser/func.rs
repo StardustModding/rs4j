@@ -37,4 +37,7 @@ pub struct FunctionExpr {
 
     /// Does it consume self?
     pub is_consumed: bool,
+
+    /// Does it need to be wrapped with a box?
+    pub boxed: bool,
 }

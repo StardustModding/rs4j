@@ -10,4 +10,7 @@ pub struct FieldExpr {
 
     /// The type of this field.
     pub ty: TypeExpr,
+
+    /// Should this only be for Rust?
+    pub rust_only: bool,
 }

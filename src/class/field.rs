@@ -16,6 +16,9 @@ pub struct Field {
 
     /// This field's [`Type`].
     pub ty: Type,
+
+    /// Is this field rust-only?
+    pub rust: bool,
 }
 
 impl Field {
@@ -24,6 +27,7 @@ impl Field {
         Self {
             name: name.as_ref().into(),
             ty,
+            rust: false,
         }
     }
 
@@ -223,6 +227,7 @@ impl From<FieldExpr> for Field {
         Self {
             name: value.name.ident_strict().unwrap(),
             ty: value.ty.into(),
+            rust: value.rust_only,
         }
     }
 }

@@ -2,21 +2,23 @@
 
 use crate::if_else;
 
-use super::ty::TypeKind;
+use super::ty::{Type, TypeKind};
 
 /// Generate conversion code for a variable.
-pub fn conversion_method(var: impl AsRef<str>, ty: &TypeKind, mutable: bool) -> Option<String> {
+pub fn conversion_method(var: impl AsRef<str>, ty: &Type, mutable: bool) -> Option<String> {
     let var = var.as_ref();
     let mut_ = if_else!(mutable, "mut ", "");
 
-    match ty {
+    match ty.kind {
         TypeKind::String => Some(format!(
             "    let {mut_}{} = env.get_string(&{}).unwrap().to_str().unwrap().to_string();",
             var, var
         )),
-        TypeKind::Other(v) => Some(format!(
+        TypeKind::Other(_) => Some(format!(
             "    let {} = &{mut_}*({} as *mut {});",
-            var, var, v
+            var,
+            var,
+            ty.full_type()
         )),
         _ => None,
     }
