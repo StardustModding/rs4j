@@ -163,7 +163,7 @@ impl NativeMethod {
     improper_ctypes_definitions,
     no_mangle_generic_items,
     deprecated,
-    missing_docs
+    missing_docs,
 )]";
 
         let pre = conversions.join("\n");
@@ -293,6 +293,17 @@ pub unsafe extern \"system\" fn Java_{name}<'local, {generics}>({base_args}, {ar
 
     /// Generate the impl for the wrapper struct.
     pub fn rust_code_wrapper(&self, cx: &ClassCtx, fields: &Vec<Field>) -> String {
+        let head = "#[allow(
+        unused_mut,
+        unused_variables,
+        unused_unsafe,
+        non_snake_case,
+        improper_ctypes_definitions,
+        no_mangle_generic_items,
+        deprecated,
+        missing_docs,
+    )]";
+
         let class = &cx.name;
         let method = &self.name;
         let tclass = self.object.clone().unwrap_or(class.clone());
@@ -354,14 +365,18 @@ pub unsafe extern \"system\" fn Java_{name}<'local, {generics}>({base_args}, {ar
                     }
                 }
 
+                if cx.wrapped {
+                    field_setters.push(format!("            __inner: base,"));
+                }
+
                 let field_setters = field_setters.join("\n");
 
-                format!("    pub unsafe fn __wrapped_{method}({args}) -> Self {{\n        let base = {tclass}::{tmethod}({args_nt});\n\n        Self {{\n{field_setters}\n        }}\n    }}")
+                format!("    {head}\n    pub unsafe fn __wrapped_{method}({args}) -> Self {{\n        let base = {tclass}::{tmethod}({args_nt});\n\n        Self {{\n{field_setters}\n        }}\n    }}")
             } else {
-                format!("    pub unsafe fn __wrapped_{method}({args}) -> {ret} {{\n        {pre}{tclass}::{tmethod}({args_nt}){post}\n    }}")
+                format!("    {head}\n    pub unsafe fn __wrapped_{method}({args}) -> {ret} {{\n        {pre}{tclass}::{tmethod}({args_nt}){post}\n    }}")
             }
         } else {
-            format!("    pub unsafe fn __wrapped_{method}(&{m_mut}self, {args}) -> {ret} {{\n        {pre}{tclass}::{tmethod}({args_nt}).clone(){post}\n    }}")
+            format!("    {head}\n    pub unsafe fn __wrapped_{method}(&{m_mut}self, {args}) -> {ret} {{\n        {pre}{tclass}::{tmethod}({args_nt}).clone(){post}\n    }}")
         }
     }
 }

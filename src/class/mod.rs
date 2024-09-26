@@ -44,6 +44,9 @@ pub struct JavaClassBuilder {
 
     /// A list of generics.
     pub generics: Vec<TypeGeneric>,
+
+    /// Should it be a wrapper?
+    pub wrapped: bool,
 }
 
 impl JavaClassBuilder {
@@ -62,11 +65,14 @@ impl JavaClassBuilder {
             native_methods: Vec::new(),
             wrapper_methods: Vec::new(),
             generics: Vec::new(),
+            wrapped: false,
         }
     }
 
     /// Add all exprs from a [`ClassExpr`].
     pub fn of(mut self, class: ClassExpr) -> Self {
+        self.wrapped = class.wrapped;
+
         for stmt in class.stmts.iter() {
             if let Expr::Function(expr) = stmt {
                 self.native_methods.push(expr.clone().into());
@@ -245,6 +251,17 @@ impl JavaClassBuilder {
 
     /// Create the Rust code for a wrapper struct.
     pub fn create_wrapper(&self) -> String {
+        let head = "#[allow(
+        unused_mut,
+        unused_variables,
+        unused_unsafe,
+        non_snake_case,
+        improper_ctypes_definitions,
+        no_mangle_generic_items,
+        deprecated,
+        missing_docs,
+    )]";
+
         let mut fields = Vec::new();
 
         let generics = self
@@ -264,6 +281,10 @@ impl JavaClassBuilder {
             .join(", ");
 
         let generics_nb = if_else!(generics_nb != "", format!("<{}>", generics_nb), "".into());
+
+        if self.wrapped {
+            fields.push(format!("    pub __inner: {},", &self.name));
+        }
 
         for field in &self.fields {
             if field.is_primitive() {
@@ -301,12 +322,19 @@ impl JavaClassBuilder {
             }
         }
 
-        impls.push(format!(
-            "    pub unsafe fn to_rust(&self) -> {}{generics_nb} {{\n        {} {{\n{}\n        }}\n    }}",
-            self.name,
-            self.name,
-            convert.join("\n")
-        ));
+        if self.wrapped {
+            impls.push(format!(
+                "    {head}\n    pub unsafe fn to_rust(&self) -> {}{generics_nb} {{\n        self.__inner.clone()\n    }}",
+                self.name,
+            ));
+        } else {
+            impls.push(format!(
+                "    {head}\n    pub unsafe fn to_rust(&self) -> {}{generics_nb} {{\n        {} {{\n{}\n        }}\n    }}",
+                self.name,
+                self.name,
+                convert.join("\n")
+            ));
+        }
 
         let cx = self.new_context();
 

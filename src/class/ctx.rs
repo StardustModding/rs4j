@@ -15,6 +15,9 @@ pub struct ClassCtx {
 
     /// Generics
     pub generics: Vec<TypeGeneric>,
+
+    /// Is the class a wrapper?
+    pub wrapped: bool,
 }
 
 impl ClassCtx {
@@ -24,6 +27,7 @@ impl ClassCtx {
             name: class.name.clone(),
             package: class.package.clone(),
             generics: class.generics.clone(),
+            wrapped: class.wrapped,
         }
     }
 

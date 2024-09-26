@@ -7,6 +7,16 @@ pub struct __JNI_MyOtherStruct {
 }
 
 impl __JNI_MyOtherStruct {
+    #[allow(
+        unused_mut,
+        unused_variables,
+        unused_unsafe,
+        non_snake_case,
+        improper_ctypes_definitions,
+        no_mangle_generic_items,
+        deprecated,
+        missing_docs,
+    )]
     pub unsafe fn to_rust(&self) -> MyOtherStruct {
         MyOtherStruct {
             a: self.a.clone(),
@@ -14,6 +24,16 @@ impl __JNI_MyOtherStruct {
         }
     }
 
+    #[allow(
+        unused_mut,
+        unused_variables,
+        unused_unsafe,
+        non_snake_case,
+        improper_ctypes_definitions,
+        no_mangle_generic_items,
+        deprecated,
+        missing_docs,
+    )]
     pub unsafe fn __wrapped_new() -> Self {
         let base = MyOtherStruct::new();
 
@@ -23,14 +43,44 @@ impl __JNI_MyOtherStruct {
         }
     }
 
+    #[allow(
+        unused_mut,
+        unused_variables,
+        unused_unsafe,
+        non_snake_case,
+        improper_ctypes_definitions,
+        no_mangle_generic_items,
+        deprecated,
+        missing_docs,
+    )]
     pub unsafe fn __wrapped_say_only(&self, message: String) -> () {
         MyOtherStruct::say_only(&self.to_rust(), message).clone()
     }
 
+    #[allow(
+        unused_mut,
+        unused_variables,
+        unused_unsafe,
+        non_snake_case,
+        improper_ctypes_definitions,
+        no_mangle_generic_items,
+        deprecated,
+        missing_docs,
+    )]
     pub unsafe fn __wrapped_say(&self, p2: String) -> () {
         MyOtherStruct::say(&self.to_rust(), p2).clone()
     }
 
+    #[allow(
+        unused_mut,
+        unused_variables,
+        unused_unsafe,
+        non_snake_case,
+        improper_ctypes_definitions,
+        no_mangle_generic_items,
+        deprecated,
+        missing_docs,
+    )]
     pub unsafe fn __wrapped_say_with(&self, p1: MyStruct, p2: String) -> () {
         MyOtherStruct::say_with(&self.to_rust(), p1, p2).clone()
     }
@@ -135,7 +185,7 @@ pub unsafe extern "system" fn Java_com_example_MyOtherStruct_jni_1get_1b<'local>
     improper_ctypes_definitions,
     no_mangle_generic_items,
     deprecated,
-    missing_docs
+    missing_docs,
 )]
 pub unsafe extern "system" fn Java_com_example_MyOtherStruct_jni_1init_1new<'local, >(mut env: JNIEnv<'local>, obj: JObject<'local>, ) -> jlong {
     
@@ -152,7 +202,7 @@ pub unsafe extern "system" fn Java_com_example_MyOtherStruct_jni_1init_1new<'loc
     improper_ctypes_definitions,
     no_mangle_generic_items,
     deprecated,
-    missing_docs
+    missing_docs,
 )]
 pub unsafe extern "system" fn Java_com_example_MyOtherStruct_jni_1say_1only<'local, >(mut env: JNIEnv<'local>, class: JClass<'local>, ptr: jlong, message: JString<'local>) -> () {
     let it = &*(ptr as *mut __JNI_MyOtherStruct);
@@ -170,7 +220,7 @@ pub unsafe extern "system" fn Java_com_example_MyOtherStruct_jni_1say_1only<'loc
     improper_ctypes_definitions,
     no_mangle_generic_items,
     deprecated,
-    missing_docs
+    missing_docs,
 )]
 pub unsafe extern "system" fn Java_com_example_MyOtherStruct_jni_1say<'local, >(mut env: JNIEnv<'local>, class: JClass<'local>, ptr: jlong, p2: JString<'local>) -> () {
     let it = &*(ptr as *mut __JNI_MyOtherStruct);
@@ -188,7 +238,7 @@ pub unsafe extern "system" fn Java_com_example_MyOtherStruct_jni_1say<'local, >(
     improper_ctypes_definitions,
     no_mangle_generic_items,
     deprecated,
-    missing_docs
+    missing_docs,
 )]
 pub unsafe extern "system" fn Java_com_example_MyOtherStruct_jni_1say_1with<'local, >(mut env: JNIEnv<'local>, class: JClass<'local>, ptr: jlong, p1: jlong, p2: JString<'local>) -> () {
     let it = &*(ptr as *mut __JNI_MyOtherStruct);
@@ -199,7 +249,16 @@ pub unsafe extern "system" fn Java_com_example_MyOtherStruct_jni_1say_1with<'loc
 }
 
 #[no_mangle]
-#[allow(unused)]
+#[allow(
+    unused_mut,
+    unused_variables,
+    unused_unsafe,
+    non_snake_case,
+    improper_ctypes_definitions,
+    no_mangle_generic_items,
+    deprecated,
+    missing_docs,
+)]
 pub unsafe extern "system" fn Java_com_example_MyOtherStruct_jni_1free<'local, >(_env: JNIEnv<'local>, _class: JClass<'local>, ptr: jlong) {
     let it = Box::from_raw(ptr as *mut __JNI_MyOtherStruct);
     let _ = Box::from_raw(it.b);
@@ -213,6 +272,16 @@ pub struct __JNI_MyStruct {
 }
 
 impl __JNI_MyStruct {
+    #[allow(
+        unused_mut,
+        unused_variables,
+        unused_unsafe,
+        non_snake_case,
+        improper_ctypes_definitions,
+        no_mangle_generic_items,
+        deprecated,
+        missing_docs,
+    )]
     pub unsafe fn to_rust(&self) -> MyStruct {
         MyStruct {
             a: self.a.clone(),
@@ -221,6 +290,16 @@ impl __JNI_MyStruct {
         }
     }
 
+    #[allow(
+        unused_mut,
+        unused_variables,
+        unused_unsafe,
+        non_snake_case,
+        improper_ctypes_definitions,
+        no_mangle_generic_items,
+        deprecated,
+        missing_docs,
+    )]
     pub unsafe fn __wrapped_new() -> Self {
         let base = MyStruct::new();
 
@@ -376,7 +455,7 @@ pub unsafe extern "system" fn Java_com_example_MyStruct_jni_1get_1c<'local>(
     improper_ctypes_definitions,
     no_mangle_generic_items,
     deprecated,
-    missing_docs
+    missing_docs,
 )]
 pub unsafe extern "system" fn Java_com_example_MyStruct_jni_1init_1new<'local, >(mut env: JNIEnv<'local>, obj: JObject<'local>, ) -> jlong {
     
@@ -385,7 +464,16 @@ pub unsafe extern "system" fn Java_com_example_MyStruct_jni_1init_1new<'local, >
 }
 
 #[no_mangle]
-#[allow(unused)]
+#[allow(
+    unused_mut,
+    unused_variables,
+    unused_unsafe,
+    non_snake_case,
+    improper_ctypes_definitions,
+    no_mangle_generic_items,
+    deprecated,
+    missing_docs,
+)]
 pub unsafe extern "system" fn Java_com_example_MyStruct_jni_1free<'local, >(_env: JNIEnv<'local>, _class: JClass<'local>, ptr: jlong) {
     let it = Box::from_raw(ptr as *mut __JNI_MyStruct);
     

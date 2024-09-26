@@ -10,7 +10,9 @@ parser! {
     pub grammar rs4j_parser() for str {
         /// Parse a [`ClassExpr`].
         pub rule class() -> Expr
-            = [' ' | '\t' | '\n']* "class" _ name: identifier() _
+            = [' ' | '\t' | '\n']*
+            _ w: "wrapped"? _
+            "class" _ name: identifier() _
             generics: (generics())?
             real_name: (
                 "=" _ real: identifier() _
@@ -18,7 +20,7 @@ parser! {
                 { (real, real_generics) }
             )?
             "{" _ stmts: statements() _ "}" _ ";" _
-            { Expr::Class(ClassExpr { name: Box::new(name.clone()), real_name: Box::new(real_name.unwrap_or((name, generics.clone()))), stmts: Box::new(stmts), generics }) }
+            { Expr::Class(ClassExpr { name: Box::new(name.clone()), wrapped: w.is_some(), real_name: Box::new(real_name.unwrap_or((name, generics.clone()))), stmts: Box::new(stmts), generics }) }
 
         /// Parse many [`ClassExpr`]s.
         pub rule classes() -> Vec<Expr>

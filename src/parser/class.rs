@@ -10,6 +10,9 @@ pub struct ClassExpr {
     /// The name of the class.
     pub name: Box<Expr>,
 
+    /// Should it be a wrapper?
+    pub wrapped: bool,
+
     /// The real rust of the class.
     pub real_name: Box<(Expr, Option<Vec<TypeExpr>>)>,
 
