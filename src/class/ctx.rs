@@ -2,7 +2,7 @@
 
 use crate::if_else;
 
-use super::{generic::TypeGeneric, JavaClassBuilder};
+use super::{generic::TypeGeneric, Class};
 
 /// A codegen context for classes
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
@@ -22,7 +22,7 @@ pub struct ClassCtx {
 
 impl ClassCtx {
     /// Create a new [`ClassCtx`].
-    pub fn new(class: &JavaClassBuilder) -> Self {
+    pub fn new(class: &Class) -> Self {
         Self {
             name: class.name.clone(),
             package: class.package.clone(),

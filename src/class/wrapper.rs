@@ -2,46 +2,15 @@
 
 use convert_case::{Case, Casing};
 
-use crate::{class::ty::TypeKind, if_else, parser::func::FunctionExpr};
+use super::{ctx::ClassCtx, method::Method, ty::TypeKind};
+use crate::if_else;
 
-use super::{arg::FunctionArg, ctx::ClassCtx, ty::Type};
-
-/// A method for the user to call that wraps a native method.
-pub struct WrapperMethod {
-    /// The name of this method.
-    pub name: String,
-
-    /// The name of the native method this calls.
-    pub calls: String,
-
-    /// This method's arguments.
-    pub args: Vec<FunctionArg>,
-
-    /// The return [`Type`] of this method.
-    pub ret: Type,
-
-    /// Does this modify the object?
-    pub is_mut: bool,
-
-    /// Is this a static method?
-    pub is_static: bool,
-
-    /// Is this a constructor?
-    pub is_init: bool,
-
-    /// Does this return an [`Option`]?
-    pub is_optional: bool,
-
-    /// Does it consume the object?
-    pub is_consumed: bool,
-}
-
-impl WrapperMethod {
+impl Method {
     /// Generate Java code for this method.
-    pub fn java_code(&self, cx: &ClassCtx) -> String {
+    pub fn wrapper_java_code(&self, cx: &ClassCtx) -> String {
         let static_code = if_else!(self.is_static, " static", "");
         let return_code = if_else!(self.ret.kind != TypeKind::Void, "return ", "");
-        let native = &self.calls;
+        let native = &self.calls();
         let name = &self.name;
         let class = &cx.name;
         // TODO: Resolve & dedupe generics for args
@@ -91,33 +60,6 @@ impl WrapperMethod {
             } else {
                 format!("    public{static_code}{generics} {ret} {c_name}({args}) {{\n        long val = {native}({args_nt});\n        {return_code}{convert}(val);\n    }}")
             }
-        }
-    }
-}
-
-impl From<FunctionExpr> for WrapperMethod {
-    fn from(value: FunctionExpr) -> Self {
-        Self {
-            name: value.name.clone().ident_strict().unwrap(),
-            calls: format!(
-                "jni_{}",
-                value
-                    .rust_name
-                    .map(|v| v.ident_strict().unwrap())
-                    .unwrap_or(value.name.ident_strict().unwrap())
-            ),
-            args: value
-                .args
-                .iter()
-                .cloned()
-                .map(|v| v.into())
-                .collect::<Vec<_>>(),
-            is_init: value.is_init,
-            is_mut: value.is_mut,
-            is_static: value.is_static,
-            is_consumed: value.is_consumed,
-            is_optional: value.is_optional,
-            ret: value.ret.map(|v| v.into()).unwrap_or_default(),
         }
     }
 }

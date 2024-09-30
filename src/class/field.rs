@@ -2,14 +2,13 @@
 
 use convert_case::{Case, Casing};
 
-use crate::parser::field::FieldExpr;
-
 use super::{
     ctx::ClassCtx,
     ty::{Type, TypeKind},
 };
 
 /// A field in a class.
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Field {
     /// The name of this field.
     pub name: String,
@@ -218,16 +217,6 @@ pub unsafe extern \"system\" fn Java_{name}<'local>(
     it.{field} as jlong
 }}"
             )
-        }
-    }
-}
-
-impl From<FieldExpr> for Field {
-    fn from(value: FieldExpr) -> Self {
-        Self {
-            name: value.name.ident_strict().unwrap(),
-            ty: value.ty.into(),
-            rust: value.rust_only,
         }
     }
 }

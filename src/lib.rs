@@ -4,7 +4,6 @@
 #[macro_use]
 extern crate peg;
 
-#[macro_use]
 pub extern crate anyhow;
 
 #[cfg(feature = "build")]

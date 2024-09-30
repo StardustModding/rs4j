@@ -1,53 +1,11 @@
 //! Native methods.
 
-use super::{
-    arg::FunctionArg,
-    ctx::ClassCtx,
-    field::Field,
-    generic::TypeGeneric,
-    ty::{Type, TypeKind},
-};
-use crate::{class::conv::conversion_method, if_else, parser::func::FunctionExpr};
+use super::{ctx::ClassCtx, field::Field, generic::TypeGeneric, method::Method, ty::TypeKind};
+use crate::{class::conv::conversion_method, if_else};
 
-/// A native method.
-pub struct NativeMethod {
-    /// The name of this method.
-    pub name: String,
-
-    /// This method's args.
-    pub args: Vec<FunctionArg>,
-
-    /// The return type.
-    pub ret: Type,
-
-    /// Is this method static?
-    pub is_static: bool,
-
-    /// Does it mutate the object?
-    pub is_mut: bool,
-
-    /// Is this a constructor?
-    pub is_init: bool,
-
-    /// Does this return an [`Option`]?
-    pub is_optional: bool,
-
-    /// Does it consume the object?
-    pub is_consumed: bool,
-
-    /// Is there another struct this should use to call the function?
-    pub object: Option<String>,
-
-    /// Is there a custom name?
-    pub custom_name: Option<String>,
-
-    /// Does it need to be boxed?
-    pub boxed: bool,
-}
-
-impl NativeMethod {
+impl Method {
     /// Generate Java code for this method.
-    pub fn java_code(&self) -> String {
+    pub fn native_java_code(&self) -> String {
         let name = if_else!(
             self.is_init,
             format!("jni_init_{}", self.name),
@@ -75,7 +33,7 @@ impl NativeMethod {
     }
 
     /// Generate Rust code for this method.
-    pub fn rust_code(
+    pub fn native_rust_code(
         &self,
         cx: &ClassCtx,
         fields: &Vec<Field>,
@@ -93,7 +51,7 @@ impl NativeMethod {
 
         let generics = generics_list
             .iter()
-            .map(|v| format!("{}: {}", v.name, v.bounds.join(" + ")))
+            .map(|v| v.code())
             .collect::<Vec<_>>()
             .join(", ");
 
@@ -333,7 +291,7 @@ pub unsafe extern \"system\" fn Java_{name}<'local, {generics}>({base_args}, {ar
     }
 
     /// Generate the impl for the wrapper struct.
-    pub fn rust_code_wrapper(&self, cx: &ClassCtx) -> String {
+    pub fn native_rust_wrapper_code(&self, cx: &ClassCtx) -> String {
         let head = "#[allow(
         unused_mut,
         unused_variables,
@@ -422,29 +380,6 @@ pub unsafe extern \"system\" fn Java_{name}<'local, {generics}>({base_args}, {ar
             } else {
                 format!("    {head}\n    pub unsafe fn __wrapped_{method}(&{m_mut}self, {args}) -> {ret} {{\n        {pre}{tclass}::{tmethod}({args_nt}).clone(){post}\n    }}")
             }
-        }
-    }
-}
-
-impl From<FunctionExpr> for NativeMethod {
-    fn from(value: FunctionExpr) -> Self {
-        Self {
-            name: value.name.ident_strict().unwrap(),
-            args: value
-                .args
-                .iter()
-                .cloned()
-                .map(|v| v.into())
-                .collect::<Vec<_>>(),
-            is_init: value.is_init,
-            is_mut: value.is_mut,
-            is_static: value.is_static,
-            is_consumed: value.is_consumed,
-            is_optional: value.is_optional,
-            ret: value.ret.map(|v| v.into()).unwrap_or_default(),
-            custom_name: value.rust_name.map(|v| v.ident_strict().unwrap()),
-            object: value.source.map(|v| v.ident_strict().unwrap()),
-            boxed: value.boxed,
         }
     }
 }

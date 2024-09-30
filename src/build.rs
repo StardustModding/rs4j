@@ -9,7 +9,7 @@ use regex::Regex;
 use crate::{
     codegen::{gen::Generator, java::gen_java_code, rust::gen_rust_code},
     equals_throw,
-    parser::parser::classes,
+    parser::classes,
 };
 
 /// The build config.

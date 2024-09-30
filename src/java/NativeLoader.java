@@ -6,8 +6,8 @@ public class NativeLoader {
     private static final String libName = "$library$";
 
     public static void load() {
-        OperatingSystem os = OperatingSystem.detect();
         Arch arch = Arch.detect();
+        OperatingSystem os = OperatingSystem.detect(arch);
         String triple = "%s-%s".formatted(arch.triplePart(), os.triplePart());
         String libPath = "/%s-%s.%s".formatted(libName, triple, os.libExt());
 
@@ -38,12 +38,16 @@ public class NativeLoader {
             throw new IllegalArgumentException("Unknown operating system: " + os);
         }
 
-        public String triplePart() {
+        public String triplePart(Arch arch) {
             switch (this) {
                 case MAC:
                     return "apple-darwin";
                 case LINUX:
-                    return "unknown-linux-gnu";
+                    if (arch == Arch.ARM_32) {
+                        return "unknown-linux-gnueabihf";
+                    } else {
+                        return "unknown-linux-gnu";
+                    }
                 case SOLARIS:
                     return "sun-solaris";
                 case WINDOWS:

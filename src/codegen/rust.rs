@@ -8,21 +8,18 @@ use std::{
 
 use anyhow::Result;
 
-use crate::{class::JavaClassBuilder, parser::expr::Expr};
+use crate::class::Class;
 
 use super::gen::Generator;
 
 /// Generate Rust bindings and write them to a file.
-pub fn gen_rust_code(gen: Generator, exprs: Vec<Expr>, out_file: PathBuf) -> Result<()> {
+pub fn gen_rust_code(gen: Generator, classes: Vec<Class>, out_file: PathBuf) -> Result<()> {
     let mut data = "use rs4j::prelude::*;\n\n".to_string();
 
-    for expr in exprs {
-        if let Expr::Class(class) = expr {
-            let build = JavaClassBuilder::new(class.name.ident_strict()?, &gen.package).of(class);
+    for class in classes {
+        let class = class.set_package(&gen.package);
 
-            // data.push_str(&gen_class(&gen, class)?);
-            data.push_str(&format!("{}\n\n", build.rust_code()));
-        }
+        data.push_str(&format!("{}\n\n", class.rust_code()));
     }
 
     if !out_file.parent().unwrap().exists() {

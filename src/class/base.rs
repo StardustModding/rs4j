@@ -43,11 +43,11 @@ pub fn free_method_rust(cls: &ClassCtx, fields: &Vec<Field>) -> String {
     let generics = cls
         .generics
         .iter()
-        .map(|v| format!("{}: {}", v.name, v.bounds.join(" + ")))
+        .map(|v| v.code())
         .collect::<Vec<_>>()
         .join(", ");
 
-    // TODO: This WILL cause a memory leak if an object is more than two levels deep. FIX THIS!
+    // FIXME: This WILL cause a memory leak if an object is more than two levels deep. FIX THIS!
     format!("{head}
 pub unsafe extern \"system\" fn Java_{method}<'local, {generics}>(_env: JNIEnv<'local>, _class: JClass<'local>, ptr: jlong) {{
     let it = Box::from_raw(ptr as *mut {class});

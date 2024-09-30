@@ -1,29 +1,28 @@
-//! The module for [`JavaClassBuilder`]s.
+//! The module for [`Class`]es.
 
 use base::{free_method_java, free_method_java_wrapper, free_method_rust, of_func};
 use ctx::ClassCtx;
 use field::Field;
 use generic::TypeGeneric;
-use native::NativeMethod;
-use wrapper::WrapperMethod;
+use method::Method;
 
-use crate::{
-    if_else,
-    parser::{class::ClassExpr, expr::Expr, field::FieldExpr, func::FunctionExpr},
-};
+use crate::if_else;
 
 pub mod arg;
 pub mod base;
 pub mod conv;
 pub mod ctx;
+pub mod expr;
 pub mod field;
 pub mod generic;
+pub mod method;
 pub mod native;
 pub mod ty;
 pub mod wrapper;
 
-/// A builder for a Java class.
-pub struct JavaClassBuilder {
+/// A Java class.
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub struct Class {
     /// The name of this class.
     pub name: String,
 
@@ -36,11 +35,8 @@ pub struct JavaClassBuilder {
     /// A list of fields.
     pub fields: Vec<Field>,
 
-    /// A list of native methods.
-    pub native_methods: Vec<NativeMethod>,
-
-    /// A list of wrapper methods.
-    pub wrapper_methods: Vec<WrapperMethod>,
+    /// A list of methods.
+    pub methods: Vec<Method>,
 
     /// A list of generics.
     pub generics: Vec<TypeGeneric>,
@@ -49,80 +45,39 @@ pub struct JavaClassBuilder {
     pub wrapped: bool,
 }
 
-impl JavaClassBuilder {
-    /// Create a new [`JavaClassBuilder`].
+impl Class {
+    /// Create a new [`Class`].
     pub fn new(name: impl AsRef<str>, package: impl AsRef<str>) -> Self {
         Self {
             name: name.as_ref().into(),
             package: package.as_ref().into(),
-            imports: vec![
-                "import java.util.*;".into(),
-                "import org.stardustmodding.rs4j.util.NativeTools;".into(),
-                "import org.stardustmodding.rs4j.util.ParentClass;".into(),
-                "import org.stardustmodding.rs4j.util.NativeClass;".into(),
-            ],
+            imports: Self::default_imports(),
             fields: Vec::new(),
-            native_methods: Vec::new(),
-            wrapper_methods: Vec::new(),
+            methods: Vec::new(),
             generics: Vec::new(),
             wrapped: false,
         }
     }
 
-    /// Add all exprs from a [`ClassExpr`].
-    pub fn of(mut self, class: ClassExpr) -> Self {
-        self.wrapped = class.wrapped;
-
-        for stmt in class.stmts.iter() {
-            if let Expr::Function(expr) = stmt {
-                self.native_methods.push(expr.clone().into());
-                self.wrapper_methods.push(expr.clone().into());
-            } else if let Expr::Field(expr) = stmt {
-                self.fields.push(expr.clone().into());
-            } else if let Expr::Bound(bound) = stmt {
-                let name = bound.name.ident_strict().unwrap();
-
-                if self.generics.iter().find(|v| v.name == name).is_none() {
-                    self.generics.push(bound.clone().into());
-                }
-            }
-        }
-
-        if let Some(generics) = class.generics {
-            for item in generics {
-                let name = item.id.ident_strict().unwrap();
-
-                if self.generics.iter().find(|v| v.name == name).is_none() {
-                    self.generics.push(item.into());
-                }
-            }
-        }
-
-        self
+    /// Get default imports.
+    pub fn default_imports() -> Vec<String> {
+        vec![
+            "import java.util.*;".into(),
+            "import org.stardustmodding.rs4j.util.NativeTools;".into(),
+            "import org.stardustmodding.rs4j.util.ParentClass;".into(),
+            "import org.stardustmodding.rs4j.util.NativeClass;".into(),
+        ]
     }
 
-    /// Add all [`FunctionExpr`]s.
-    pub fn add_func_exprs(mut self, exprs: Vec<FunctionExpr>) -> Self {
-        for expr in exprs {
-            self.native_methods.push(expr.clone().into());
-            self.wrapper_methods.push(expr.clone().into());
-        }
-
-        self
-    }
-
-    /// Add all [`FieldExpr`]s.
-    pub fn add_field_exprs(mut self, exprs: Vec<FieldExpr>) -> Self {
-        for expr in exprs {
-            self.fields.push(expr.into());
-        }
-
+    /// Set the package name.
+    pub fn set_package(mut self, pkg: impl AsRef<str>) -> Self {
+        self.package = pkg.as_ref().to_string();
         self
     }
 
     /// Add an import.
-    pub fn import(mut self, import: String) -> Self {
-        self.imports.push(import);
+    pub fn import(mut self, import: impl AsRef<str>) -> Self {
+        self.imports.push(import.as_ref().to_string());
         self
     }
 
@@ -133,14 +88,8 @@ impl JavaClassBuilder {
     }
 
     /// Add a native method.
-    pub fn native(mut self, method: NativeMethod) -> Self {
-        self.native_methods.push(method);
-        self
-    }
-
-    /// Add a native method.
-    pub fn wrapper(mut self, method: WrapperMethod) -> Self {
-        self.wrapper_methods.push(method);
+    pub fn method(mut self, method: Method) -> Self {
+        self.methods.push(method);
         self
     }
 
@@ -162,12 +111,12 @@ impl JavaClassBuilder {
             "package {pkg};\n\n{imports}\n\npublic class {class_g} implements ParentClass, NativeClass {{\n"
         );
 
-        for func in &self.native_methods {
-            natives.push(func.java_code());
+        for func in &self.methods {
+            natives.push(func.native_java_code());
         }
 
-        for func in &self.wrapper_methods {
-            wrappers.push(func.java_code(&cx));
+        for func in &self.methods {
+            wrappers.push(func.wrapper_java_code(&cx));
         }
 
         for field in &self.fields {
@@ -243,8 +192,8 @@ impl JavaClassBuilder {
             code.push(f.rust_getter(&cx));
         }
 
-        for m in &self.native_methods {
-            code.push(m.rust_code(&cx, &self.fields, &self.generics));
+        for m in &self.methods {
+            code.push(m.native_rust_code(&cx, &self.fields, &self.generics));
         }
 
         code.push(free_method_rust(&cx, &self.fields));
@@ -271,7 +220,7 @@ impl JavaClassBuilder {
         let generics = self
             .generics
             .iter()
-            .map(|v| format!("{}: {}", v.name, v.bounds.join(" + ")))
+            .map(|v| v.code())
             .collect::<Vec<_>>()
             .join(", ");
 
@@ -342,8 +291,8 @@ impl JavaClassBuilder {
             ));
         }
 
-        for native in &self.native_methods {
-            impls.push(native.rust_code_wrapper(&cx));
+        for native in &self.methods {
+            impls.push(native.native_rust_wrapper_code(&cx));
         }
 
         let impl_ = format!(

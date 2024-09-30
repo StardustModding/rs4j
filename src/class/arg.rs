@@ -1,11 +1,9 @@
 //! Arguments
 
-use crate::parser::{expr::Expr, ty::TypeExpr};
-
 use super::ty::Type;
 
 /// A function argument.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct FunctionArg {
     /// The argument name.
     pub name: String,
@@ -30,20 +28,6 @@ impl FunctionArg {
             self.name.clone()
         } else {
             format!("{}.getPointer()", self.name)
-        }
-    }
-}
-
-impl From<(Expr, TypeExpr, bool, bool, bool)> for FunctionArg {
-    fn from((name, ty, borrow, mutable, into): (Expr, TypeExpr, bool, bool, bool)) -> Self {
-        let name = name.ident().unwrap();
-
-        Self {
-            name,
-            ty: ty.into(),
-            borrow,
-            mutable,
-            into,
         }
     }
 }

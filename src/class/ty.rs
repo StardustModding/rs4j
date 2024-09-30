@@ -1,6 +1,6 @@
 //! Types.
 
-use crate::{if_else, parser::ty::TypeExpr};
+use crate::if_else;
 
 /// A type.
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Default)]
@@ -242,41 +242,6 @@ impl TypeKind {
             Self::Bool => "NativeTools.getBool".into(),
             Self::Char => "NativeTools.getChar".into(),
             Self::Other(it) => format!("{}.from", it),
-        }
-    }
-}
-
-impl From<TypeExpr> for TypeKind {
-    fn from(value: TypeExpr) -> Self {
-        match value.id.ident_strict().unwrap().as_str() {
-            "()" => Self::Void,
-            "i8" => Self::I8,
-            "i16" => Self::I16,
-            "i32" => Self::I32,
-            "i64" => Self::I64,
-            "u8" => Self::U8,
-            "u16" => Self::U16,
-            "u32" => Self::U32,
-            "u64" => Self::U64,
-            "f32" => Self::F32,
-            "f64" => Self::F64,
-            "bool" => Self::Bool,
-            "char" => Self::Char,
-            "String" => Self::String,
-            it => Self::Other(it.to_string()),
-        }
-    }
-}
-
-impl From<TypeExpr> for Type {
-    fn from(value: TypeExpr) -> Self {
-        Self {
-            generics: value
-                .generics
-                .clone()
-                .map(|v| v.iter().cloned().map(|v| v.into()).collect::<Vec<_>>()),
-
-            kind: value.into(),
         }
     }
 }

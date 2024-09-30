@@ -1,6 +1,6 @@
 //! Type generics
 
-use crate::parser::{bound::BoundExpr, ty::TypeExpr};
+use super::ty::Type;
 
 /// A type generic
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
@@ -9,26 +9,28 @@ pub struct TypeGeneric {
     pub name: String,
 
     /// A list of bounds
-    pub bounds: Vec<String>,
+    pub bounds: Vec<Type>,
 }
 
-impl From<BoundExpr> for TypeGeneric {
-    fn from(value: BoundExpr) -> Self {
-        Self {
-            name: value.name.ident_strict().unwrap(),
-            bounds: value
-                .traits
-                .split("+")
-                .map(|v| v.trim().to_string())
-                .collect(),
-        }
+impl TypeGeneric {
+    /// Convert this into Rust code.
+    pub fn code(&self) -> String {
+        format!(
+            "{}: {}",
+            self.name,
+            self.bounds
+                .iter()
+                .map(|v| v.full_type())
+                .collect::<Vec<_>>()
+                .join(" + ")
+        )
     }
 }
 
-impl From<TypeExpr> for TypeGeneric {
-    fn from(value: TypeExpr) -> Self {
+impl From<Type> for TypeGeneric {
+    fn from(value: Type) -> Self {
         Self {
-            name: value.id.ident_strict().unwrap(),
+            name: value.kind.rust_name(),
             bounds: Vec::new(),
         }
     }
