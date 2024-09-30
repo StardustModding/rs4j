@@ -3,6 +3,7 @@
 [![Crates.io Version](https://img.shields.io/crates/v/rs4j?style=for-the-badge)](https://crates.io/crates/rs4j)
 [![docs.rs](https://img.shields.io/docsrs/rs4j?style=for-the-badge)](https://docs.rs/rs4j)
 ![Lines of code](https://tokei.rs/b1/github/StardustModding/rs4j?style=for-the-badge&label=Lines+Of+Code)
+![Rustdoc Coverage](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/RedstoneWizard08/426c3d21386c385b86bd9a34eee3bdf4/raw/doc-coverage.json)
 
 A small, automatic, efficient, and easy-to-use Rust to Java bridge.
 
