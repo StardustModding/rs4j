@@ -8,18 +8,7 @@ description = "A small, automatic, efficient, and easy-to-use Rust to Java bridg
 homepage = "https://github.com/StardustModding/rs4j"
 repository = "https://github.com/StardustModding/rs4j"
 exclude = ["vscode", "hljs", "hljs-demo", "example"]
-keywords = [
-    "ffi",
-    "bridge",
-    "extern",
-    "java",
-    "interop",
-    "jni",
-    "native",
-    "bindings",
-    "bindgen",
-    "peg",
-]
+keywords = ["ffi", "bridge", "extern", "java", "interop"]
 
 [features]
 default = []
