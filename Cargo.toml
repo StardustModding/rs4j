@@ -1,14 +1,25 @@
 [package]
 name = "rs4j"
-version = "0.9.0"
+version = "0.10.0"
 edition = "2021"
 authors = ["RedstoneWizard08", "Stardust Modding Contributors"]
 license = "MIT"
 description = "A small, automatic, efficient, and easy-to-use Rust to Java bridge."
 homepage = "https://github.com/StardustModding/rs4j"
 repository = "https://github.com/StardustModding/rs4j"
-keywords = ["ffi", "bridge", "extern", "java", "interop"]
-exclude = ["vscode"]
+exclude = ["vscode", "hljs", "hljs-demo", "example"]
+keywords = [
+    "ffi",
+    "bridge",
+    "extern",
+    "java",
+    "interop",
+    "jni",
+    "native",
+    "bindings",
+    "bindgen",
+    "peg",
+]
 
 [features]
 default = []
