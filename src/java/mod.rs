@@ -3,7 +3,7 @@
 /// Our native binary loader.
 pub const NATIVE_LOADER: &str = include_str!("NativeLoader.java");
 
-/// @adamheinrich's NativeUtils class: https://github.com/adamheinrich/native-utils
+/// @adamheinrich's NativeUtils class: <https://github.com/adamheinrich/native-utils>
 pub const NATIVE_UTILS: &str = include_str!("NativeUtils.java");
 
 /// Tools for native libraries
