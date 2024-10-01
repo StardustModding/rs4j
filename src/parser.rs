@@ -125,7 +125,7 @@ parser! {
 
         /// Parse a [`Type`].
         pub rule _type() -> Type
-            = id: _type_k() _ generics: _generics()?
+            = id: _type_k() _ generics: (_generics())?
             { Type { kind: id, generics } }
 
         /// Parse a [`TypeKind`].
@@ -151,7 +151,7 @@ parser! {
         rule _uint_k() -> TypeKind = _u8_k() / _u16_k() / _u32_k() / _u64_k()
         rule _int_k() -> TypeKind = _i8_k() / _i16_k() / _i32_k() / _i64_k()
         rule _float_k() -> TypeKind = _f32_k() / _f64_k()
-        rule _extra_k() -> TypeKind = _bool_k() / _char_k() / _str_k() / _void_k()
+        rule _extra_k() -> TypeKind = _bool_k() / _char_k() / _str_k() / _void_k() / _other_k()
 
         // Generics
 
