@@ -7,8 +7,8 @@ use glob::glob;
 use regex::Regex;
 
 use crate::{
-    codegen::{gen::Generator, java::gen_java_code, rust::gen_rust_code},
-    equals_throw,
+    codegen::{cx::Generator, java::gen_java_code, rust::gen_rust_code},
+    equals_throw, if_else,
     parser::classes,
 };
 
@@ -21,7 +21,7 @@ pub struct BindgenConfig {
     /// The input `.rs4j` files (or globs) that get processed.
     pub files: Vec<PathBuf>,
 
-    /// The directory where Java bindings.
+    /// The directory where Java bindings will be written.
     pub output: PathBuf,
 
     /// The path of the file to generate Rust bindings in.
@@ -29,6 +29,9 @@ pub struct BindgenConfig {
 
     /// Enable using JetBrains annotations?
     pub annotations: bool,
+
+    /// Generate Kotlin code?
+    pub kotlin: bool,
 }
 
 impl BindgenConfig {
@@ -40,38 +43,39 @@ impl BindgenConfig {
             output: PathBuf::new(),
             bindings: PathBuf::new(),
             annotations: false,
+            kotlin: false,
         }
     }
 
     /// Set the Java bindings output directory.
-    pub fn output<T>(&mut self, val: T) -> Self
+    pub fn output<T>(mut self, val: T) -> Self
     where
         T: Into<PathBuf>,
     {
         self.output = val.into();
-        self.clone()
+        self
     }
 
     /// Set the Rust bindings output file.
-    pub fn bindings<T>(&mut self, val: T) -> Self
+    pub fn bindings<T>(mut self, val: T) -> Self
     where
         T: Into<PathBuf>,
     {
         self.bindings = val.into();
-        self.clone()
+        self
     }
 
     /// Set the package name to generate as.
-    pub fn package<T>(&mut self, val: T) -> Self
+    pub fn package<T>(mut self, val: T) -> Self
     where
         T: AsRef<str>,
     {
         self.package = val.as_ref().to_string();
-        self.clone()
+        self
     }
 
     /// Alias to [`Self::package`]
-    pub fn pkg<T>(&mut self, val: T) -> Self
+    pub fn pkg<T>(self, val: T) -> Self
     where
         T: AsRef<str>,
     {
@@ -79,16 +83,16 @@ impl BindgenConfig {
     }
 
     /// Add a `.rs4j` file to the config.
-    pub fn file<T>(&mut self, val: T) -> Self
+    pub fn file<T>(mut self, val: T) -> Self
     where
         T: Into<PathBuf>,
     {
         self.files.push(val.into());
-        self.clone()
+        self
     }
 
     /// Add a list of `.rs4j` files to the config.
-    pub fn files<T>(&mut self, val: Vec<T>) -> Self
+    pub fn files<T>(mut self, val: Vec<T>) -> Self
     where
         T: Into<PathBuf>,
     {
@@ -96,11 +100,11 @@ impl BindgenConfig {
             self.files.push(file.into());
         }
 
-        self.clone()
+        self
     }
 
     /// Add `.rs4j` files to the config via globbing for them.
-    pub fn glob<T>(&mut self, val: T) -> Result<Self>
+    pub fn glob<T>(mut self, val: T) -> Result<Self>
     where
         T: AsRef<str>,
     {
@@ -110,13 +114,19 @@ impl BindgenConfig {
             }
         }
 
-        Ok(self.clone())
+        Ok(self)
     }
 
     /// Enable/disable JetBrains annotations.
-    pub fn annotations(&mut self, val: bool) -> Self {
+    pub fn annotations(mut self, val: bool) -> Self {
         self.annotations = val;
-        self.clone()
+        self
+    }
+
+    /// Enable/disable Kotlin codegen.
+    pub fn kotlin(mut self, enable: bool) -> Self {
+        self.kotlin = enable;
+        self
     }
 
     /// Generate bindings.
@@ -166,10 +176,12 @@ impl BindgenConfig {
     }
 
     fn generate_bindings(&self) -> Result<()> {
-        let gen = Generator {
+        let cx = Generator {
             package: self.package.clone(),
             with_annotations: self.annotations,
             library: env::var("CARGO_PKG_NAME")?,
+            kotlin: self.kotlin,
+            out_dir: self.output.join(if_else!(self.kotlin, "kotlin", "java")),
         };
 
         let mut exprs = Vec::new();
@@ -180,20 +192,26 @@ impl BindgenConfig {
             exprs.append(&mut classes(data.as_str())?);
         }
 
-        gen_rust_code(gen.clone(), exprs.clone(), self.bindings.clone())?;
-        gen_java_code(gen.clone(), exprs, self.output.clone())?;
+        for item in &mut exprs {
+            item.package = cx.package.clone();
+        }
+
+        gen_rust_code(&cx, &exprs, &self.bindings)?;
+        gen_java_code(&cx, &exprs)?;
 
         Ok(())
     }
 
     fn post_build_internal(&self) -> Result<()> {
-        let gen = Generator {
+        let cx = Generator {
             package: self.package.clone(),
             with_annotations: self.annotations,
             library: env::var("CARGO_PKG_NAME")?,
+            kotlin: self.kotlin,
+            out_dir: self.output.join(if_else!(self.kotlin, "kotlin", "java")),
         };
 
-        let res = self.output.clone().join("resources");
+        let res = self.output.join("resources");
 
         if !res.exists() {
             fs::create_dir_all(&res)?;
@@ -211,23 +229,14 @@ impl BindgenConfig {
         let re = Regex::new("gnueabi(?:hf)?")?;
         let dir = env::var("OUT_DIR")?;
         let target_dir = PathBuf::from(dir).join("../../..").canonicalize()?;
-        let out_name = format!("{}-{}.{}", gen.library, target, lib_ext);
+        let out_name = format!("{}-{}.{}", cx.library, target, lib_ext);
         let out_name = re.replace(&out_name, "gnu").to_string();
         let out_path = res.join(out_name);
-        let in_name = format!("lib{}.{}", gen.library, lib_ext);
+        let in_name = format!("lib{}.{}", cx.library.replace("-", "_"), lib_ext);
         let in_path = target_dir.join(in_name);
 
         fs::copy(in_path, out_path)?;
 
         Ok(())
-    }
-
-    /// Copy generated files to a directory, overwriting existing files.
-    pub fn copy_to(self, dir: impl Into<PathBuf>) -> Result<Self> {
-        let dir: PathBuf = dir.into();
-
-        dircpy::copy_dir_advanced(&self.output, dir, true, false, false, vec![], vec![])?;
-
-        Ok(self)
     }
 }

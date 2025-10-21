@@ -1,5 +1,7 @@
 //! Arguments
 
+use crate::codegen::java::JExpr;
+
 use super::ty::Type;
 
 /// A function argument.
@@ -23,11 +25,11 @@ pub struct FunctionArg {
 
 impl FunctionArg {
     /// Get the reference for Java
-    pub fn java_name(&self) -> String {
+    pub fn java_name(&self) -> JExpr {
         if self.ty.kind.is_primitive() {
-            self.name.clone()
+            JExpr::Name(self.name.clone())
         } else {
-            format!("{}.getPointer()", self.name)
+            JExpr::GetPointer(self.name.clone())
         }
     }
 }

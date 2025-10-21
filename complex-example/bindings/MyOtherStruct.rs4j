@@ -1,0 +1,10 @@
+class MyOtherStruct {
+    field a: String;
+    field b: MyStruct;
+
+    static init fn new() -> Self;
+
+    fn say_only(message: String);
+    fn say(p2: String);
+    fn say_with(p1: MyStruct, p2: String);
+};

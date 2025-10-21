@@ -1,0 +1,24 @@
+[package]
+name = "complex-example"
+version = "0.1.0"
+edition = "2024"
+
+[lib]
+crate-type = ["cdylib"]
+
+[features]
+default = []
+post-build = ["anyhow", "rs4j/build"]
+
+[[bin]]
+name = "post-build"
+path = "post-build.rs"
+required-features = ["post-build"]
+
+[dependencies]
+anyhow = { version = "1.0.100", optional = true }
+rs4j = { path = ".." }
+
+[build-dependencies]
+anyhow = "1.0.100"
+rs4j = { path = "..", features = ["build"] }

@@ -1,6 +1,6 @@
 //! Types.
 
-use crate::if_else;
+use crate::{codegen::java::JType, if_else};
 
 /// A type.
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Default)]
@@ -69,6 +69,17 @@ impl Type {
     /// Get the conversion function for this type
     pub fn convert_func(&self) -> String {
         self.kind.convert_func()
+    }
+
+    pub fn j_type(&self) -> JType {
+        if let Some(it) = &self.generics {
+            JType::Generic {
+                base: Box::new(self.kind.j_type()),
+                params: it.iter().map(|it| it.j_type()).collect(),
+            }
+        } else {
+            self.kind.j_type()
+        }
     }
 }
 
@@ -217,6 +228,23 @@ impl TypeKind {
             Self::Bool => "jboolean".into(),
             Self::Char => "jchar".into(),
             Self::Other(_) => "jlong".into(),
+        }
+    }
+
+    /// Get the java type for codegen.
+    pub fn j_type(&self) -> JType {
+        match self {
+            Self::Void => JType::Void,
+            Self::String => JType::String,
+            Self::I8 | Self::U8 => JType::Byte,
+            Self::I16 | Self::U16 => JType::Short,
+            Self::I32 | Self::U32 => JType::Int,
+            Self::I64 | Self::U64 => JType::Long,
+            Self::F32 => JType::Float,
+            Self::F64 => JType::Double,
+            Self::Bool => JType::Bool,
+            Self::Char => JType::Char,
+            Self::Other(it) => JType::Custom(it.clone()),
         }
     }
 

@@ -8,7 +8,7 @@ use jni::{
 
 use super::include::object_to_jobject;
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 #[allow(
     unused_mut,
     unused_variables,
@@ -19,19 +19,19 @@ use super::include::object_to_jobject;
     deprecated,
     missing_docs
 )]
-pub unsafe extern "system" fn Java_org_stardustmodding_rs4j_util_NativeTools_getString<'local>(
+pub extern "system" fn Java_org_stardustmodding_rs4j_util_NativeTools_getString<'local>(
     mut env: JNIEnv<'local>,
     class: JClass<'local>,
     ptr: jlong,
 ) -> jstring {
     let ptr = ptr as *const String;
 
-    env.new_string(std::ptr::read(ptr)).unwrap().as_raw()
+    env.new_string(unsafe { std::ptr::read(ptr) }).unwrap().as_raw()
 }
 
 macro_rules! basic_method {
     ($name: ident = $ty: ident ($t2: ident)) => {
-        #[no_mangle]
+        #[unsafe(no_mangle)]
         #[allow(
             unused_mut,
             unused_variables,
@@ -40,16 +40,17 @@ macro_rules! basic_method {
             improper_ctypes_definitions,
             no_mangle_generic_items,
             deprecated,
-            missing_docs
+            missing_docs,
+            unsafe_op_in_unsafe_fn,
         )]
-        pub unsafe extern "system" fn $name<'local>(
+        pub extern "system" fn $name<'local>(
             mut env: JNIEnv<'local>,
             class: JClass<'local>,
             ptr: jlong,
         ) -> $ty {
             let ptr = ptr as *const $t2;
 
-            std::ptr::read(ptr) as $ty
+            unsafe { std::ptr::read(ptr) as $ty }
         }
     };
 }
@@ -63,7 +64,7 @@ basic_method!(Java_org_stardustmodding_rs4j_util_NativeTools_getChar = jchar(cha
 basic_method!(Java_org_stardustmodding_rs4j_util_NativeTools_getFloat = jfloat(f32));
 basic_method!(Java_org_stardustmodding_rs4j_util_NativeTools_getDouble = jdouble(f64));
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 #[allow(
     unused_mut,
     unused_variables,

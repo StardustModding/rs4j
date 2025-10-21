@@ -29,6 +29,8 @@ public class NativeTools {
     }
 
     private static class GetTypeParent<T> {
+        // FIXME: Does this even work? Isn't there type erasure during compilation?
+        // Investigate.
         @SuppressWarnings("unchecked")
         public String getGenericName() {
             return ((Class<T>) ((ParameterizedType) getClass()

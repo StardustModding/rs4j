@@ -1,13 +1,13 @@
 //! The PEG parser.
 
 use crate::class::{
+    Class,
     arg::FunctionArg,
     expr::Expr,
     field::Field,
     generic::TypeGeneric,
     method::Method,
     ty::{Type, TypeKind},
-    Class,
 };
 
 parser! {
@@ -24,8 +24,8 @@ parser! {
             rule _class() -> Class
             = __ _ wrapped: "wrapped"? _
             "class" _ name: _ident() _
-            generics: ("<" _ g: _generics() _ ">" { g })? _
-            real_name: ("=" _ id: _ident() { id })? _
+            generics: _generics()? _
+            real_name: ("=" _ id: _ident() _ generics: _generics()? { (id, generics.unwrap_or_default()) })? _
             "{" _ stmts: stmts() _ "}" _ ";"?
             {
                 let class_generics: Vec<TypeGeneric> = generics.unwrap_or_default().iter().map(|v| v.clone().into()).collect::<Vec<_>>();
@@ -41,6 +41,7 @@ parser! {
 
                 Class {
                     name,
+                    real_name,
                     wrapped: wrapped.is_some(),
                     package: String::new(),
                     fields,
@@ -65,9 +66,9 @@ parser! {
         pub rule generic() -> Expr = val: _generic() { Expr::Generic(val) }
 
         rule _generic() -> TypeGeneric
-            = __ _ "bound" _ name: _ident() _ ":"
-            _ bounds: (ty: _type() ** "+" { ty }) _ ";"
-            { TypeGeneric { name, bounds } }
+            = __ rust_only: ("[" _ "rust" _ "]")? _ free: "free"? _ "bound" _ name: _ident() bounds: (_ ":"
+            _ bounds: (ty: _type() ** (_ "+" _) { ty }) { bounds })? _ ";"
+            { TypeGeneric { name, bounds: bounds.unwrap_or_default(), rust_only: rust_only.is_some(), free: free.is_some() } }
 
         /// Parse a [`Field`] as an [`Expr`].
         pub rule field() -> Expr = val: _field() { Expr::Field(val) }

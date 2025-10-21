@@ -2,7 +2,7 @@
 
 use crate::if_else;
 
-use super::{generic::TypeGeneric, Class};
+use super::{Class, generic::TypeGeneric};
 
 /// A codegen context for classes
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
@@ -79,17 +79,46 @@ impl ClassCtx {
     }
 
     /// Get the name of the class with generics for Java
-    pub fn raw_name_generics_java(&self) -> String {
+    pub fn raw_name_generics_java(&self, kotlin: bool) -> String {
         let generics = self
             .generics
             .iter()
-            .map(|v| format!("{} extends ParentClass & NativeClass", v.name))
+            .map(|v| {
+                format!(
+                    "{} {}",
+                    v.name,
+                    if_else!(kotlin, "", "extends ParentClass & NativeClass")
+                )
+            })
             .collect::<Vec<_>>()
             .join(", ");
 
         let generics = if_else!(generics != "", format!("<{}>", generics), "".into());
 
         format!("{}{}", &self.name, generics)
+    }
+
+    pub fn kotlin_wheres(&self) -> String {
+        let generics = self
+            .generics
+            .iter()
+            .flat_map(|v| {
+                if v.free {
+                    vec![]
+                } else {
+                    vec![
+                        format!("{}: ParentClass", v.name),
+                        format!("{}: NativeClass", v.name),
+                    ]
+                }
+            })
+            .collect::<Vec<_>>();
+
+        if generics.is_empty() {
+            "".into()
+        } else {
+            format!(" where {}", generics.join(", "))
+        }
     }
 
     /// Get generics for Java

@@ -1,6 +1,16 @@
 //! Fields.
 
 use convert_case::{Case, Casing};
+use std::collections::BTreeMap;
+
+use crate::{
+    class::base::RUST_BRIDGE_HEAD,
+    codegen::java::{
+        JCall, JExpr, JExternMethod, JGetterImpl, JMember, JMethodImpl, JSafeFieldCall, JSetField,
+        JType,
+    },
+    if_else,
+};
 
 use super::{
     ctx::ClassCtx,
@@ -36,80 +46,168 @@ impl Field {
     }
 
     /// Generate Java code for a setter.
-    pub fn java_setter(&self) -> String {
+    pub fn java_setter(&self) -> JMember {
         let name = format!("jni_set_{}", &self.name);
-        let ty = self.ty.full_type_java();
 
-        if self.is_primitive() {
-            format!("    private static native long {name}(long ptr, {ty} value);")
-        } else {
-            format!("    private static native long {name}(long ptr, long value);")
-        }
+        JMember::ExternMethod(JExternMethod {
+            name,
+            is_static: true,
+            private: true,
+            ret: JType::Long,
+            args: vec![
+                ("ptr".into(), JType::Long),
+                (
+                    "value".into(),
+                    if_else!(self.is_primitive(), self.ty.j_type(), JType::Long),
+                ),
+            ],
+        })
     }
 
     /// Generate Java wrapper code for a setter.
-    pub fn java_setter_wrapper(&self) -> String {
+    pub fn java_setter_wrapper(&self) -> JMember {
         let native = format!("jni_set_{}", &self.name);
         let name = format!("set_{}", &self.name).to_case(Case::Camel);
-        let ty = self.ty.full_type_java();
 
         if self.is_primitive() {
-            format!("    public void {name}({ty} value) {{\n        __ptr = {native}(__ptr, value);\n\n        if (__parent != null) {{\n            __parent.updateField(__parentField, __ptr);\n        }}\n    }}")
+            JMember::MethodImpl(JMethodImpl {
+                name,
+                private: false,
+                is_override: false,
+                is_static: false,
+                ret: JType::Void,
+                args: vec![("value".into(), self.ty.j_type())],
+                generics: BTreeMap::new(),
+                code: vec![
+                    JExpr::SetField(JSetField {
+                        target: "__ptr".into(),
+                        value: Box::new(JExpr::Call(JCall {
+                            target: native,
+                            args: vec![JExpr::Name("__ptr".into()), JExpr::Name("value".into())],
+                        })),
+                    }),
+                    JExpr::SafeFieldCall(JSafeFieldCall {
+                        field: "__parent".into(),
+                        target: "updateField".into(),
+                        args: vec![
+                            JExpr::Name("__parentField".into()),
+                            JExpr::Name("__ptr".into()),
+                        ],
+                    }),
+                ],
+            })
         } else {
-            format!("    public void {name}({ty} value) {{\n        __ptr = {native}(__ptr, value.getPointer());\n\n        if (__parent != null) {{\n            __parent.updateField(__parentField, __ptr);\n        }}\n    }}")
+            JMember::MethodImpl(JMethodImpl {
+                name,
+                private: false,
+                is_override: false,
+                is_static: false,
+                ret: JType::Void,
+                args: vec![("value".into(), self.ty.j_type())],
+                generics: BTreeMap::new(),
+                code: vec![
+                    JExpr::SetField(JSetField {
+                        target: "__ptr".into(),
+                        value: Box::new(JExpr::Call(JCall {
+                            target: native,
+                            args: vec![
+                                JExpr::Name("__ptr".into()),
+                                JExpr::GetPointer("value".into()),
+                            ],
+                        })),
+                    }),
+                    JExpr::SafeFieldCall(JSafeFieldCall {
+                        field: "__parent".into(),
+                        target: "updateField".into(),
+                        args: vec![
+                            JExpr::Name("__parentField".into()),
+                            JExpr::Name("__ptr".into()),
+                        ],
+                    }),
+                ],
+            })
         }
     }
 
     /// Generate Java code for a getter.
-    pub fn java_getter(&self) -> String {
+    pub fn java_getter(&self) -> JMember {
         let name = format!("jni_get_{}", &self.name);
-        let ty = self.ty.full_type_java();
 
-        if self.is_primitive() {
-            format!("    private static native {ty} {name}(long ptr);")
-        } else {
-            format!("    private static native long {name}(long ptr);")
-        }
+        JMember::ExternMethod(JExternMethod {
+            name,
+            is_static: true,
+            private: true,
+            ret: if_else!(self.is_primitive(), self.ty.j_type(), JType::Long),
+            args: vec![("ptr".into(), JType::Long)],
+        })
     }
 
     /// Generate Java wrapper code for a getter.
-    pub fn java_getter_wrapper(&self) -> String {
+    pub fn java_getter_wrapper(&self) -> JMember {
         let field = &self.name;
         let native = format!("jni_get_{}", &self.name);
         let name = format!("get_{}", &self.name).to_case(Case::Camel);
         let ty = self.ty.full_type_java();
 
         if self.is_primitive() {
-            format!("    public {ty} {name}() {{\n        return {native}(__ptr);\n    }}")
+            JMember::Getter(JGetterImpl {
+                name,
+                getter_name: self.name.clone(),
+                ret: self.ty.j_type(),
+                args: Vec::new(),
+                private: false,
+                is_static: false,
+                is_override: false,
+                generics: BTreeMap::new(),
+                code: vec![JExpr::Return(Box::new(JExpr::Call(JCall {
+                    target: native,
+                    args: vec![JExpr::Name("__ptr".into())],
+                })))],
+            })
         } else {
-            format!("    public {ty} {name}() {{\n        return {ty}.from({native}(__ptr), this, \"{field}\");\n    }}")
+            JMember::Getter(JGetterImpl {
+                name,
+                getter_name: self.name.clone(),
+                ret: self.ty.j_type(),
+                args: Vec::new(),
+                private: false,
+                is_static: false,
+                is_override: false,
+                generics: BTreeMap::new(),
+                code: vec![JExpr::Return(Box::new(JExpr::Call(JCall {
+                    target: format!("{}.from", ty),
+                    args: vec![
+                        JExpr::Call(JCall {
+                            target: native,
+                            args: vec![JExpr::Name("__ptr".into())],
+                        }),
+                        JExpr::Name("this".into()),
+                        JExpr::Name(format!("\"{field}\"")),
+                    ],
+                })))],
+            })
         }
     }
 
     /// Generate Rust code for a setter.
     pub fn rust_setter(&self, cx: &ClassCtx) -> String {
         let name = cx.method_name(format!("jni_set_{}", &self.name));
-        let class = cx.name();
+        let class = cx.name_generics();
         let field = &self.name;
 
-        let head = "#[no_mangle]
-#[allow(
-    unused_mut,
-    unused_variables,
-    unused_unsafe,
-    non_snake_case,
-    improper_ctypes_definitions,
-    no_mangle_generic_items,
-    deprecated,
-    missing_docs
-)]";
+        let generics = cx
+            .generics
+            .iter()
+            .map(|v| v.code())
+            .collect::<Vec<_>>()
+            .join(", ");
 
         if self.ty.kind.is_number() {
             let val_ty = self.ty.kind.jni_name();
 
             format!(
-                "{head}
-pub unsafe extern \"system\" fn Java_{name}<'local>(
+                "{RUST_BRIDGE_HEAD}
+pub unsafe extern \"system\" fn Java_{name}<'local, {generics}>(
     mut env: JNIEnv<'local>,
     class: JClass<'local>,
     ptr: jlong,
@@ -124,8 +222,8 @@ pub unsafe extern \"system\" fn Java_{name}<'local>(
             )
         } else if self.ty.kind == TypeKind::String {
             format!(
-                "{head}
-pub unsafe extern \"system\" fn Java_{name}<'local>(
+                "{RUST_BRIDGE_HEAD}
+pub unsafe extern \"system\" fn Java_{name}<'local, {generics}>(
     mut env: JNIEnv<'local>,
     class: JClass<'local>,
     ptr: jlong,
@@ -143,8 +241,8 @@ pub unsafe extern \"system\" fn Java_{name}<'local>(
             let other_name = self.ty.full_type();
 
             format!(
-                "{head}
-pub unsafe extern \"system\" fn Java_{name}<'local>(
+                "{RUST_BRIDGE_HEAD}
+pub unsafe extern \"system\" fn Java_{name}<'local, {generics}>(
     mut env: JNIEnv<'local>,
     class: JClass<'local>,
     ptr: jlong,
@@ -163,26 +261,21 @@ pub unsafe extern \"system\" fn Java_{name}<'local>(
     /// Generate Rust code for a getter.
     pub fn rust_getter(&self, cx: &ClassCtx) -> String {
         let name = cx.method_name(format!("jni_get_{}", &self.name));
-        let class = cx.name();
+        let class = cx.name_generics();
         let field = &self.name;
         let ret = self.ty.kind.jni_name();
 
-        let head = "#[no_mangle]
-#[allow(
-    unused_mut,
-    unused_variables,
-    unused_unsafe,
-    non_snake_case,
-    improper_ctypes_definitions,
-    no_mangle_generic_items,
-    deprecated,
-    missing_docs
-)]";
+        let generics = cx
+            .generics
+            .iter()
+            .map(|v| v.code())
+            .collect::<Vec<_>>()
+            .join(", ");
 
         if self.ty.kind.is_number() {
             format!(
-                "{head}
-pub unsafe extern \"system\" fn Java_{name}<'local>(
+                "{RUST_BRIDGE_HEAD}
+pub unsafe extern \"system\" fn Java_{name}<'local, {generics}>(
     mut env: JNIEnv<'local>,
     class: JClass<'local>,
     ptr: jlong,
@@ -194,8 +287,8 @@ pub unsafe extern \"system\" fn Java_{name}<'local>(
             )
         } else if self.ty.kind == TypeKind::String {
             format!(
-                "{head}
-pub unsafe extern \"system\" fn Java_{name}<'local>(
+                "{RUST_BRIDGE_HEAD}
+pub unsafe extern \"system\" fn Java_{name}<'local, {generics}>(
     mut env: JNIEnv<'local>,
     class: JClass<'local>,
     ptr: jlong,
@@ -206,8 +299,8 @@ pub unsafe extern \"system\" fn Java_{name}<'local>(
             )
         } else {
             format!(
-                "{head}
-pub unsafe extern \"system\" fn Java_{name}<'local>(
+                "{RUST_BRIDGE_HEAD}
+pub unsafe extern \"system\" fn Java_{name}<'local, {generics}>(
     mut env: JNIEnv<'local>,
     class: JClass<'local>,
     ptr: jlong,

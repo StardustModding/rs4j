@@ -1,10 +1,17 @@
 //! Codegen for the natives loader.
 
-use crate::java::NATIVE_LOADER;
+use crate::{
+    codegen::cx::Generator,
+    java::{java, kotlin},
+};
 
 /// Generate a NativeLoader class.
-pub fn generate_loader(package: impl AsRef<str>, lib_name: impl AsRef<str>) -> String {
-    NATIVE_LOADER
-        .replace("$package$", package.as_ref())
-        .replace("$library$", lib_name.as_ref())
+pub fn generate_loader(cx: &Generator) -> String {
+    if cx.kotlin {
+        kotlin::NATIVE_LOADER
+    } else {
+        java::NATIVE_LOADER
+    }
+    .replace("$package$", &cx.package)
+    .replace("$library$", &cx.library)
 }

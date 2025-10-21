@@ -1,148 +1,182 @@
 {
-  "fileTypes": [
-    "rs4j"
-  ],
-  "name": "rs4j",
-  "patterns": [
-    {
-      "include": "#main"
+    "$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
+    "fileTypes": ["rs4j"],
+    "name": "rs4j",
+    "patterns": [
+        {
+            "include": "#main"
+        }
+    ],
+    "scopeName": "source.rs4j",
+    "repository": {
+        "main": {
+            "patterns": [
+                {
+                    "name": "storage.type.variable.rs4j",
+                    "match": "\\b(field)\\b\\s*([A-Za-z_][A-Za-z0-9_]*)",
+                    "captures": {
+                        "1": {
+                            "name": "keyword.rs4j"
+                        },
+                        "2": {
+                            "name": "variable.name.rs4j"
+                        }
+                    }
+                },
+                {
+                    "name": "storage.type.function.rs4j",
+                    "match": "\\b(fn)\\b\\s*([A-Za-z_][A-Za-z0-9_]*)",
+                    "captures": {
+                        "1": {
+                            "name": "keyword.rs4j"
+                        },
+                        "2": {
+                            "name": "entity.name.function.rs4j"
+                        }
+                    }
+                },
+                {
+                    "name": "variable.name.rs4j",
+                    "match": "\\b([A-Za-z_][A-Za-z0-9_]*)\\s*:\\s*([A-Za-z_][A-Za-z0-9_]*)",
+                    "captures": {
+                        "1": {
+                            "name": "variable.name.rs4j"
+                        },
+                        "2": {
+                            "name": "entity.name.type.rs4j"
+                        }
+                    }
+                },
+                {
+                    "match": "\\b(fn|mut|optional|class|static|consumed|bound|init)",
+                    "name": "keyword.rs4j"
+                },
+                {
+                    "match": "(#into)",
+                    "name": "keyword.rs4j"
+                },
+                {
+                    "match": "\\b(String|str|bool|(i|u)(8|16|32|64)|f(32|64))",
+                    "name": "entity.name.type.rs4j"
+                },
+                {
+                    "match": "\\b([a-z_\\x{0024}][\\w\\x{0024}]*)",
+                    "name": "entity.name.rs4j"
+                },
+                {
+                    "match": "(\\[\\b([a-z_\\x{0024}][\\w\\x{0024}]*)\\])",
+                    "name": "entity.name.rs4j"
+                },
+                {
+                    "match": "\\b([A-Z][\\w\\$]*)",
+                    "name": "entity.name.type.rs4j"
+                },
+                {
+                    "include": "#numeric"
+                },
+                {
+                    "begin": "(\\{)",
+                    "beginCaptures": {
+                        "1": {
+                            "name": "punctuation.rs4j"
+                        }
+                    },
+                    "patterns": [
+                        {
+                            "include": "#main__1"
+                        }
+                    ],
+                    "end": "(\\};)",
+                    "endCaptures": {
+                        "1": {
+                            "name": "punctuation.rs4j"
+                        }
+                    }
+                },
+                {
+                    "match": "\\b([\\x{003b}.\\x{002c}\\x{003a}\\x{0026}-\\x{003e}\\x{003c}]+)",
+                    "name": "punctuation.rs4j"
+                },
+                {
+                    "match": "(&)",
+                    "name": "punctuation.rs4j"
+                },
+                {
+                    "match": "(->)",
+                    "name": "punctuation.rs4j"
+                },
+                {
+                    "begin": "(\\\")",
+                    "beginCaptures": {
+                        "1": {
+                            "name": "punctuation.rs4j"
+                        }
+                    },
+                    "contentName": "text.rs4j",
+                    "end": "(\\\")",
+                    "endCaptures": {
+                        "1": {
+                            "name": "punctuation.rs4j"
+                        }
+                    }
+                },
+                {
+                    "begin": "(\\()",
+                    "beginCaptures": {
+                        "1": {
+                            "name": "punctuation.rs4j"
+                        }
+                    },
+                    "patterns": [
+                        {
+                            "include": "#main__3"
+                        }
+                    ],
+                    "end": "(\\))",
+                    "endCaptures": {
+                        "1": {
+                            "name": "punctuation.rs4j"
+                        }
+                    }
+                },
+                {
+                    "match": "(//.*)",
+                    "name": "comment.rs4j"
+                },
+                {
+                    "match": "([^\\s])",
+                    "name": "invalid.rs4j"
+                }
+            ]
+        },
+        "main__1": {
+            "patterns": [
+                {
+                    "include": "#main"
+                }
+            ]
+        },
+        "main__2": {
+            "patterns": []
+        },
+        "main__3": {
+            "patterns": [
+                {
+                    "include": "#numeric"
+                },
+                {
+                    "match": "(,)",
+                    "name": "punctuation.rs4j"
+                }
+            ]
+        },
+        "numeric": {
+            "patterns": [
+                {
+                    "match": "(\\b\\d+)",
+                    "name": "constant.numeric.rs4j"
+                }
+            ]
+        }
     }
-  ],
-  "scopeName": "source.rs4j",
-  "uuid": "9228a4ca-b173-41e2-9419-0d4b5616f588",
-  "repository": {
-    "main": {
-      "patterns": [
-        {
-          "match": "\\b(fn|mut|optional|class|static|consumed|bound|field|init)",
-          "name": "keyword.rs4j"
-        },
-        {
-          "match": "(#into)",
-          "name": "keyword.rs4j"
-        },
-        {
-          "match": "\\b(String|str|bool|(i|u)(8|16|32|64)|f(32|64))",
-          "name": "entity.name.type.rs4j"
-        },
-        {
-          "match": "\\b([a-z_\\x{0024}][\\w\\x{0024}]*)",
-          "name": "entity.name.rs4j"
-        },
-        {
-          "match": "(\\[\\b([a-z_\\x{0024}][\\w\\x{0024}]*)\\])",
-          "name": "entity.name.rs4j"
-        },
-        {
-          "match": "\\b([A-Z][\\w\\$]*)",
-          "name": "entity.name.type.rs4j"
-        },
-        {
-          "include": "#numeric"
-        },
-        {
-          "begin": "(\\{)",
-          "beginCaptures": {
-            "1": {
-              "name": "punctuation.rs4j"
-            }
-          },
-          "patterns": [
-            {
-              "include": "#main__1"
-            }
-          ],
-          "end": "(\\};)",
-          "endCaptures": {
-            "1": {
-              "name": "punctuation.rs4j"
-            }
-          }
-        },
-        {
-          "match": "\\b([\\x{003b}.\\x{002c}\\x{003a}\\x{0026}-\\x{003e}\\x{003c}]+)",
-          "name": "punctuation.rs4j"
-        },
-        {
-          "match": "(&)",
-          "name": "punctuation.rs4j"
-        },
-        {
-          "match": "(->)",
-          "name": "punctuation.rs4j"
-        },
-        {
-          "begin": "(\\\")",
-          "beginCaptures": {
-            "1": {
-              "name": "punctuation.rs4j"
-            }
-          },
-          "contentName": "text.rs4j",
-          "end": "(\\\")",
-          "endCaptures": {
-            "1": {
-              "name": "punctuation.rs4j"
-            }
-          }
-        },
-        {
-          "begin": "(\\()",
-          "beginCaptures": {
-            "1": {
-              "name": "punctuation.rs4j"
-            }
-          },
-          "patterns": [
-            {
-              "include": "#main__3"
-            }
-          ],
-          "end": "(\\))",
-          "endCaptures": {
-            "1": {
-              "name": "punctuation.rs4j"
-            }
-          }
-        },
-        {
-          "match": "(//.*)",
-          "name": "comment.rs4j"
-        },
-        {
-          "match": "([^\\s])",
-          "name": "invalid.rs4j"
-        }
-      ]
-    },
-    "main__1": {
-      "patterns": [
-        {
-          "include": "#main"
-        }
-      ]
-    },
-    "main__2": {
-      "patterns": []
-    },
-    "main__3": {
-      "patterns": [
-        {
-          "include": "#numeric"
-        },
-        {
-          "match": "(,)",
-          "name": "punctuation.rs4j"
-        }
-      ]
-    },
-    "numeric": {
-      "patterns": [
-        {
-          "match": "(\\b\\d+)",
-          "name": "constant.numeric.rs4j"
-        }
-      ]
-    }
-  }
 }

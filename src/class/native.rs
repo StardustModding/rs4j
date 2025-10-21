@@ -1,35 +1,46 @@
 //! Native methods.
 
 use super::{ctx::ClassCtx, field::Field, generic::TypeGeneric, method::Method, ty::TypeKind};
-use crate::{class::conv::conversion_method, if_else};
+use crate::{
+    class::{
+        base::{RUST_BRIDGE_HEAD, RUST_BRIDGE_HEAD_MANGLE},
+        conv::conversion_method,
+    },
+    codegen::java::{JExternMethod, JMember, JType},
+    if_else,
+};
 
 impl Method {
     /// Generate Java code for this method.
-    pub fn native_java_code(&self) -> String {
+    pub fn native_java_code(&self) -> JMember {
         let name = if_else!(
             self.is_init,
             format!("jni_init_{}", self.name),
             format!("jni_{}", self.name)
         );
 
-        let ret = self.ret.kind.native_name();
+        let ret = self.ret.kind.j_type();
         let mut args = Vec::new();
 
         if !self.is_static {
-            args.push("long ptr".into());
+            args.push(("ptr".into(), JType::Long));
         }
 
         for arg in &self.args {
-            args.push(format!("{} {}", arg.ty.kind.native_name(), arg.name));
+            if arg.ty.kind.is_primitive() {
+                args.push((arg.name.clone(), arg.ty.kind.j_type()));
+            } else {
+                args.push((arg.name.clone(), JType::Long));
+            }
         }
 
-        let args = args.join(", ");
-
-        if self.is_init {
-            format!("    private native long {name}({args});")
-        } else {
-            format!("    private static native {ret} {name}({args});")
-        }
+        JMember::ExternMethod(JExternMethod {
+            name,
+            private: true,
+            ret: if_else!(self.is_init, JType::Long, ret),
+            is_static: !self.is_init,
+            args,
+        })
     }
 
     /// Generate Rust code for this method.
@@ -112,18 +123,6 @@ impl Method {
         let mut post2 =
             if_else!(self.ret.kind == TypeKind::String, ").unwrap().as_raw()", "").to_string();
 
-        let head = "#[no_mangle]
-#[allow(
-    unused_mut,
-    unused_variables,
-    unused_unsafe,
-    non_snake_case,
-    improper_ctypes_definitions,
-    no_mangle_generic_items,
-    deprecated,
-    missing_docs,
-)]";
-
         let pre = conversions.join("\n");
 
         match self.ret.kind {
@@ -166,7 +165,7 @@ impl Method {
         if self.is_init {
             if self.is_optional {
                 format!(
-                    "{head}
+                    "{RUST_BRIDGE_HEAD}
 pub unsafe extern \"system\" fn Java_{name}<'local, {generics}>({base_args}, {args}) -> {ret} {{
     {pre}
     let it = {class}::__wrapped_{method}({args_nt});
@@ -180,7 +179,7 @@ pub unsafe extern \"system\" fn Java_{name}<'local, {generics}>({base_args}, {ar
                 )
             } else {
                 format!(
-                    "{head}
+                    "{RUST_BRIDGE_HEAD}
 pub unsafe extern \"system\" fn Java_{name}<'local, {generics}>({base_args}, {args}) -> {ret} {{
     {pre}
     let it = {class}::__wrapped_{method}({args_nt});
@@ -192,7 +191,7 @@ pub unsafe extern \"system\" fn Java_{name}<'local, {generics}>({base_args}, {ar
             if self.is_static {
                 if self.is_optional {
                     format!(
-                        "{head}
+                        "{RUST_BRIDGE_HEAD}
 pub unsafe extern \"system\" fn Java_{name}<'local, {generics}>({base_args}, {args}) -> {ret} {{
     {pre}
 
@@ -207,7 +206,7 @@ pub unsafe extern \"system\" fn Java_{name}<'local, {generics}>({base_args}, {ar
                     )
                 } else {
                     format!(
-                        "{head}
+                        "{RUST_BRIDGE_HEAD}
 pub unsafe extern \"system\" fn Java_{name}<'local, {generics}>({base_args}, {args}) -> {ret} {{
     {pre}
 
@@ -229,7 +228,7 @@ pub unsafe extern \"system\" fn Java_{name}<'local, {generics}>({base_args}, {ar
 
                     if self.is_optional {
                         format!(
-                            "{head}
+                            "{RUST_BRIDGE_HEAD}
 pub unsafe extern \"system\" fn Java_{name}<'local, {generics}>({base_args}, {args}) -> {ret} {{
     {pre}
 
@@ -247,7 +246,7 @@ pub unsafe extern \"system\" fn Java_{name}<'local, {generics}>({base_args}, {ar
                         )
                     } else {
                         format!(
-                            "{head}
+                            "{RUST_BRIDGE_HEAD}
 pub unsafe extern \"system\" fn Java_{name}<'local, {generics}>({base_args}, {args}) -> {ret} {{
     {pre}
 
@@ -262,7 +261,7 @@ pub unsafe extern \"system\" fn Java_{name}<'local, {generics}>({base_args}, {ar
                 } else {
                     if self.is_optional {
                         format!(
-                            "{head}
+                            "{RUST_BRIDGE_HEAD}
 pub unsafe extern \"system\" fn Java_{name}<'local, {generics}>({base_args}, {args}) -> {ret} {{
     {pre}
 
@@ -277,7 +276,7 @@ pub unsafe extern \"system\" fn Java_{name}<'local, {generics}>({base_args}, {ar
                         )
                     } else {
                         format!(
-                            "{head}
+                            "{RUST_BRIDGE_HEAD}
 pub unsafe extern \"system\" fn Java_{name}<'local, {generics}>({base_args}, {args}) -> {ret} {{
     {pre}
 
@@ -292,17 +291,6 @@ pub unsafe extern \"system\" fn Java_{name}<'local, {generics}>({base_args}, {ar
 
     /// Generate the impl for the wrapper struct.
     pub fn native_rust_wrapper_code(&self, cx: &ClassCtx) -> String {
-        let head = "#[allow(
-        unused_mut,
-        unused_variables,
-        unused_unsafe,
-        non_snake_case,
-        improper_ctypes_definitions,
-        no_mangle_generic_items,
-        deprecated,
-        missing_docs,
-    )]";
-
         let class = &cx.name;
         let method = &self.name;
         let tclass = self.object.clone().unwrap_or(class.clone());
@@ -363,22 +351,34 @@ pub unsafe extern \"system\" fn Java_{name}<'local, {generics}>({base_args}, {ar
         if self.is_static {
             if self.is_init {
                 if self.is_optional {
-                    format!("    {head}\n    pub unsafe fn __wrapped_{method}({args}) -> Option<Self> {{\n        let base = {tclass}::{tmethod}({args_nt});\n\n        if let Some(base) = base {{\n            Some(Self::of(base))\n        }} else {{\n            None\n        }}\n    }}")
+                    format!(
+                        "    {RUST_BRIDGE_HEAD_MANGLE}\n    pub unsafe fn __wrapped_{method}({args}) -> Option<Self> {{\n        let base = {tclass}::{tmethod}({args_nt});\n\n        if let Some(base) = base {{\n            Some(Self::of(base))\n        }} else {{\n            None\n        }}\n    }}"
+                    )
                 } else {
-                    format!("    {head}\n    pub unsafe fn __wrapped_{method}({args}) -> Self {{\n        let base = {tclass}::{tmethod}({args_nt});\n\n        Self::of(base)\n    }}")
+                    format!(
+                        "    {RUST_BRIDGE_HEAD_MANGLE}\n    pub unsafe fn __wrapped_{method}({args}) -> Self {{\n        let base = {tclass}::{tmethod}({args_nt});\n\n        Self::of(base)\n    }}"
+                    )
                 }
             } else {
                 if self.is_optional {
-                    format!("    {head}\n    pub unsafe fn __wrapped_{method}({args}) -> {ret} {{\n        let val = {tclass}::{tmethod}({args_nt});\n        if let Some(val) = val {{\n            Some({pre}val{post})\n        }} else {{\n            None\n        }}\n    }}")
+                    format!(
+                        "    {RUST_BRIDGE_HEAD_MANGLE}\n    pub unsafe fn __wrapped_{method}({args}) -> {ret} {{\n        let val = {tclass}::{tmethod}({args_nt});\n        if let Some(val) = val {{\n            Some({pre}val{post})\n        }} else {{\n            None\n        }}\n    }}"
+                    )
                 } else {
-                    format!("    {head}\n    pub unsafe fn __wrapped_{method}({args}) -> {ret} {{\n        {pre}{tclass}::{tmethod}({args_nt}){post}\n    }}")
+                    format!(
+                        "    {RUST_BRIDGE_HEAD_MANGLE}\n    pub unsafe fn __wrapped_{method}({args}) -> {ret} {{\n        {pre}{tclass}::{tmethod}({args_nt}){post}\n    }}"
+                    )
                 }
             }
         } else {
             if self.is_optional {
-                format!("    {head}\n    pub unsafe fn __wrapped_{method}(&{m_mut}self, {args}) -> {ret} {{\n        let val = {tclass}::{tmethod}({args_nt});\n        if let Some(val) = val {{\n            Some({pre}val.clone(){post})\n        }} else {{\n            None\n        }}\n    }}")
+                format!(
+                    "    {RUST_BRIDGE_HEAD_MANGLE}\n    pub unsafe fn __wrapped_{method}(&{m_mut}self, {args}) -> {ret} {{\n        let val = {tclass}::{tmethod}({args_nt});\n        if let Some(val) = val {{\n            Some({pre}val.clone(){post})\n        }} else {{\n            None\n        }}\n    }}"
+                )
             } else {
-                format!("    {head}\n    pub unsafe fn __wrapped_{method}(&{m_mut}self, {args}) -> {ret} {{\n        {pre}{tclass}::{tmethod}({args_nt}).clone(){post}\n    }}")
+                format!(
+                    "    {RUST_BRIDGE_HEAD_MANGLE}\n    pub unsafe fn __wrapped_{method}(&{m_mut}self, {args}) -> {ret} {{\n        {pre}{tclass}::{tmethod}({args_nt}).clone(){post}\n    }}"
+                )
             }
         }
     }

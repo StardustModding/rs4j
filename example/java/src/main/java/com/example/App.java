@@ -2,11 +2,11 @@ package com.example;
 
 public class App {
     static {
-        NativeLoader.load();
+        NativeLoader.INSTANCE.load();
     }
 
     public static void main(String[] args) {
-        // It can also be here:
+        // The native loader initialization can also be here:
         // NativeLoader.load();
         // It just needs to be called before any native objects are used.
         

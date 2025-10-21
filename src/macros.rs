@@ -35,7 +35,8 @@ macro_rules! getter {
             improper_ctypes_definitions,
             no_mangle_generic_items,
             deprecated,
-            missing_docs
+            missing_docs,
+            unsafe_op_in_unsafe_fn,
         )]
         pub unsafe extern "system" fn $m<'local>(
             mut env: JNIEnv<'local>,
@@ -61,7 +62,8 @@ macro_rules! setter {
             improper_ctypes_definitions,
             no_mangle_generic_items,
             deprecated,
-            missing_docs
+            missing_docs,
+            unsafe_op_in_unsafe_fn,
         )]
         pub unsafe extern "system" fn $m<'local>(
             mut env: JNIEnv<'local>,

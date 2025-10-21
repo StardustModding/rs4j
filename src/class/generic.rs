@@ -10,6 +10,12 @@ pub struct TypeGeneric {
 
     /// A list of bounds
     pub bounds: Vec<Type>,
+
+    /// If the bounds should be rust-only.
+    pub rust_only: bool,
+
+    /// If there should be no bounds on the java side.
+    pub free: bool,
 }
 
 impl TypeGeneric {
@@ -32,6 +38,8 @@ impl From<Type> for TypeGeneric {
         Self {
             name: value.kind.rust_name(),
             bounds: Vec::new(),
+            rust_only: false,
+            free: false,
         }
     }
 }

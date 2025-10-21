@@ -1,12 +1,23 @@
 //! The module for [`Class`]es.
 
 use base::{free_method_java, free_method_java_wrapper, free_method_rust, of_func};
+use convert_case::{Case, Casing};
 use ctx::ClassCtx;
 use field::Field;
 use generic::TypeGeneric;
 use method::Method;
+use std::collections::BTreeMap;
 
-use crate::if_else;
+use crate::{
+    class::{base::RUST_BRIDGE_HEAD_MANGLE, ty::Type},
+    codegen::{
+        cx::Generator,
+        java::{
+            JCall, JClassDef, JCtor, JExpr, JField, JGetterImpl, JGetterSetterImpl, JIf, JMember, JMethodImpl, JNewCall, JSetField, JType
+        },
+    },
+    if_else,
+};
 
 pub mod arg;
 pub mod base;
@@ -43,6 +54,8 @@ pub struct Class {
 
     /// Should it be a wrapper?
     pub wrapped: bool,
+
+    pub real_name: Option<(String, Vec<Type>)>,
 }
 
 impl Class {
@@ -56,16 +69,17 @@ impl Class {
             methods: Vec::new(),
             generics: Vec::new(),
             wrapped: false,
+            real_name: None,
         }
     }
 
     /// Get default imports.
     pub fn default_imports() -> Vec<String> {
         vec![
-            "import java.util.*;".into(),
-            "import org.stardustmodding.rs4j.util.NativeTools;".into(),
-            "import org.stardustmodding.rs4j.util.ParentClass;".into(),
-            "import org.stardustmodding.rs4j.util.NativeClass;".into(),
+            "java.util.*".into(),
+            "org.stardustmodding.rs4j.util.NativeTools".into(),
+            "org.stardustmodding.rs4j.util.ParentClass".into(),
+            "org.stardustmodding.rs4j.util.NativeClass".into(),
         ]
     }
 
@@ -94,22 +108,37 @@ impl Class {
     }
 
     /// Create the Java code.
-    pub fn java_code(&self) -> String {
+    pub fn java_code(&self, gcx: &Generator) -> JClassDef {
         let pkg = &self.package;
-        let imports = self.imports.join("\n");
         let class = &self.name;
         let cx = self.new_context();
         let mut natives = Vec::new();
         let mut wrappers = Vec::new();
         let mut fields = Vec::new();
         let mut update_fields = Vec::new();
-        let class_g = cx.raw_name_generics_java();
+        let class_g = cx.raw_name_generics_java(gcx.kotlin);
+        let wheres = cx.kotlin_wheres();
         let class_ge = cx.raw_name_generics();
-        let g = cx.generics_java();
 
-        let head = format!(
-            "package {pkg};\n\n{imports}\n\npublic class {class_g} implements ParentClass, NativeClass {{\n"
-        );
+        let generics = self
+            .generics
+            .iter()
+            .map(|it| {
+                (
+                    it.name.clone(),
+                    if it.free {
+                        vec![]
+                    } else if it.rust_only {
+                        vec!["ParentClass".into(), "NativeClass".into()]
+                    } else {
+                        it.bounds
+                            .iter()
+                            .map(|it| it.j_type().name(gcx))
+                            .collect::<Vec<_>>()
+                    },
+                )
+            })
+            .collect::<BTreeMap<_, _>>();
 
         for func in &self.methods {
             natives.push(func.native_java_code());
@@ -129,53 +158,179 @@ impl Class {
             natives.push(field.java_setter());
             natives.push(field.java_getter());
 
-            fields.push(field.java_setter_wrapper());
-            fields.push(field.java_getter_wrapper());
+            fields.push(JMember::GetterSetter(JGetterSetterImpl {
+                name: field.name.clone(),
+                setter_name: format!("set_{}", &field.name).to_case(Case::Camel),
+                getter_name: format!("get_{}", &field.name).to_case(Case::Camel),
+                is_static: false,
+                private: false,
+                ty: field.ty.clone(),
+            }));
+
+            // fields.push(field.java_setter_wrapper());
+            // fields.push(field.java_getter_wrapper());
 
             if !field.is_primitive() {
-                update_fields.push(format!("        if (field == \"{name}\") {{\n            __ptr = jni_set_{name}(__ptr, pointer);\n        }}"));
+                update_fields.push(JExpr::If(JIf {
+                    cond: Box::new(JExpr::Name(format!("field == \"{name}\""))),
+                    body: vec![JExpr::SetField(JSetField {
+                        target: "__ptr".into(),
+                        value: Box::new(JExpr::Call(JCall {
+                            target: format!("jni_set_{name}"),
+                            args: vec![JExpr::Name("__ptr".into()), JExpr::Name("pointer".into())],
+                        })),
+                    })],
+                }));
             }
         }
 
-        natives.push(free_method_java().into());
-        wrappers.push(free_method_java_wrapper().into());
+        natives.push(free_method_java());
+        wrappers.push(free_method_java_wrapper());
 
-        let natives = natives.join("\n");
-        let wrappers = wrappers.join("\n\n");
-        let fields = fields.join("\n\n");
+        let vars = vec![
+            JMember::Field(JField {
+                name: "__ptr".into(),
+                is_final: false,
+                is_static: false,
+                private: true,
+                ty: JType::Long,
+                value: Some("-1".into()),
+            }),
+            JMember::Field(JField {
+                name: "__parent".into(),
+                is_final: false,
+                is_static: false,
+                private: true,
+                ty: JType::Nullable(Box::new(JType::Custom("ParentClass".into()))),
+                value: Some("null".into()),
+            }),
+            JMember::Field(JField {
+                name: "__parentField".into(),
+                is_final: false,
+                is_static: false,
+                private: true,
+                ty: JType::Nullable(Box::new(JType::String)),
+                value: Some("null".into()),
+            }),
+        ];
 
-        let vars = "    private long __ptr = -1;\n    private ParentClass __parent = null;\n    private String __parentField = null;";
+        let inits = vec![
+            JMember::Ctor(JCtor {
+                name: class.clone(),
+                args: vec![("ptr".into(), JType::Long)],
+                private: true,
+                code: vec![JExpr::SetField(JSetField {
+                    target: "__ptr".into(),
+                    value: Box::new(JExpr::Name("ptr".into())),
+                })],
+            }),
+            JMember::Ctor(JCtor {
+                name: class.clone(),
+                args: vec![
+                    ("ptr".into(), JType::Long),
+                    ("parent".into(), JType::Custom("ParentClass".into())),
+                    ("parentField".into(), JType::String),
+                ],
+                private: true,
+                code: vec![
+                    JExpr::SetField(JSetField {
+                        target: "__ptr".into(),
+                        value: Box::new(JExpr::Name("ptr".into())),
+                    }),
+                    JExpr::SetField(JSetField {
+                        target: "__parent".into(),
+                        value: Box::new(JExpr::Name("parent".into())),
+                    }),
+                    JExpr::SetField(JSetField {
+                        target: "__parentField".into(),
+                        value: Box::new(JExpr::Name("parentField".into())),
+                    }),
+                ],
+            }),
+        ];
 
-        let inits = format!(
-            "    private {class}(long ptr) {{
-        __ptr = ptr;
-    }}
+        let froms = vec![
+            JMember::MethodImpl(JMethodImpl {
+                name: "from".into(),
+                args: vec![("ptr".into(), JType::Long)],
+                ret: JType::Custom(class_ge.clone()), // TODO: Use proper generic types here
+                generics: generics.clone(),
+                is_override: false,
+                is_static: true,
+                private: false,
+                code: vec![JExpr::Return(Box::new(JExpr::New(JNewCall {
+                    target: class_ge.clone(),
+                    args: vec![JExpr::Name("ptr".into())],
+                })))],
+            }),
+            JMember::MethodImpl(JMethodImpl {
+                name: "from".into(),
+                args: vec![
+                    ("ptr".into(), JType::Long),
+                    ("parent".into(), JType::Custom("ParentClass".into())),
+                    ("parentField".into(), JType::String),
+                ],
+                ret: JType::Custom(class_ge.clone()), // TODO: Use proper generic types here
+                generics: generics.clone(),
+                is_override: false,
+                is_static: true,
+                private: false,
+                code: vec![JExpr::Return(Box::new(JExpr::New(JNewCall {
+                    target: class_ge.clone(),
+                    args: vec![
+                        JExpr::Name("ptr".into()),
+                        JExpr::Name("parent".into()),
+                        JExpr::Name("parentField".into()),
+                    ],
+                })))],
+            }),
+        ];
 
-    private {class}(long ptr, ParentClass parent, String parentField) {{
-        __ptr = ptr;
-        __parent = parent;
-        __parentField = parentField;
-    }}"
-        );
+        let overrides = vec![
+            JMember::Getter(JGetterImpl {
+                name: "getPointer".into(),
+                getter_name: "pointer".into(),
+                is_override: true,
+                is_static: false,
+                private: false,
+                ret: JType::Long,
+                args: Vec::new(),
+                generics: BTreeMap::new(),
+                code: vec![JExpr::Return(Box::new(JExpr::Name("__ptr".into())))],
+            }),
+            JMember::MethodImpl(JMethodImpl {
+                name: "updateField".into(),
+                is_override: true,
+                is_static: false,
+                private: false,
+                ret: JType::Void,
+                args: vec![
+                    ("field".into(), JType::Nullable(Box::new(JType::String))),
+                    ("pointer".into(), JType::Long),
+                ],
+                generics: BTreeMap::new(),
+                code: update_fields,
+            }),
+        ];
 
-        let froms = format!(
-            "    public static {g} {class_ge} from(long ptr) {{
-        return new {class_ge}(ptr);
-    }}
+        let mut members = Vec::new();
 
-    public static {g} {class_ge} from(long ptr, ParentClass parent, String parentField) {{
-        return new {class_ge}(ptr, parent, parentField);
-    }}"
-        );
+        members.extend(natives);
+        members.extend(vars);
+        members.extend(wrappers);
+        members.extend(fields);
+        members.extend(inits);
+        members.extend(froms);
+        members.extend(overrides);
 
-        let get_ptr = "    @Override\n    public long getPointer() {\n        return __ptr;\n    }";
-
-        let update = format!(
-            "    @Override\n    public void updateField(String field, long pointer) {{\n{}\n    }}",
-            update_fields.join("\n")
-        );
-
-        format!("{head}{natives}\n\n{vars}\n\n{wrappers}\n\n{fields}\n\n{inits}\n\n{froms}\n\n{get_ptr}\n\n{update}\n}}")
+        JClassDef {
+            pkg: pkg.into(),
+            name: class_g,
+            extends: vec!["ParentClass".into(), "NativeClass".into()],
+            members,
+            imports: self.imports.clone(),
+            wheres,
+        }
     }
 
     /// Generate rust bindgen code
@@ -203,17 +358,6 @@ impl Class {
 
     /// Create the Rust code for a wrapper struct.
     pub fn create_wrapper(&self) -> String {
-        let head = "#[allow(
-        unused_mut,
-        unused_variables,
-        unused_unsafe,
-        non_snake_case,
-        improper_ctypes_definitions,
-        no_mangle_generic_items,
-        deprecated,
-        missing_docs,
-    )]";
-
         let cx = self.new_context();
         let mut fields = Vec::new();
 
@@ -279,12 +423,12 @@ impl Class {
 
         if self.wrapped {
             impls.push(format!(
-                "    {head}\n    pub unsafe fn to_rust(&self) -> {}{generics_nb} {{\n        self.__inner.clone()\n    }}",
+                "    {RUST_BRIDGE_HEAD_MANGLE}\n    pub unsafe fn to_rust(&self) -> {}{generics_nb} {{\n        self.__inner.clone()\n    }}",
                 self.name,
             ));
         } else {
             impls.push(format!(
-                "    {head}\n    pub unsafe fn to_rust(&self) -> {}{generics_nb} {{\n        {} {{\n{}\n        }}\n    }}",
+                "    {RUST_BRIDGE_HEAD_MANGLE}\n    pub unsafe fn to_rust(&self) -> {}{generics_nb} {{\n        {} {{\n{}\n        }}\n    }}",
                 self.name,
                 self.name,
                 convert.join("\n")

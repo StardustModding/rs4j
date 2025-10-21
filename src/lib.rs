@@ -1,5 +1,6 @@
+#![feature(hash_map_macro)]
 #![doc = include_str!("../README.md")]
-#![warn(missing_docs)]
+// #![warn(missing_docs)]
 
 #[macro_use]
 extern crate peg;

@@ -7,8 +7,8 @@ public class NativeLoader {
 
     public static void load() {
         Arch arch = Arch.detect();
-        OperatingSystem os = OperatingSystem.detect(arch);
-        String triple = "%s-%s".formatted(arch.triplePart(), os.triplePart());
+        OperatingSystem os = OperatingSystem.detect();
+        String triple = "%s-%s".formatted(arch.triplePart(), os.triplePart(arch));
         String libPath = "/%s-%s.%s".formatted(libName, triple, os.libExt());
 
         try {
@@ -19,12 +19,8 @@ public class NativeLoader {
         }
     }
 
-    private static enum OperatingSystem {
-        MAC,
-        LINUX,
-        SOLARIS,
-        WINDOWS,
-        FREEBSD;
+    private enum OperatingSystem {
+        MAC, LINUX, SOLARIS, WINDOWS, FREEBSD;
 
         public static OperatingSystem detect() {
             String os = System.getProperty("os.name").toLowerCase();
@@ -39,43 +35,25 @@ public class NativeLoader {
         }
 
         public String triplePart(Arch arch) {
-            switch (this) {
-                case MAC:
-                    return "apple-darwin";
-                case LINUX:
-                    if (arch == Arch.ARM_32) {
-                        return "unknown-linux-gnueabihf";
-                    } else {
-                        return "unknown-linux-gnu";
-                    }
-                case SOLARIS:
-                    return "sun-solaris";
-                case WINDOWS:
-                    return "pc-windows-gnu";
-                case FREEBSD:
-                    return "unknown-freebsd";
-            }
-
-            throw new RuntimeException("How did we get here?");
+            return switch (this) {
+                case MAC -> "apple-darwin";
+                case LINUX -> arch == Arch.ARM_32 ? "unknown-linux-gnueabihf" : "unknown-linux-gnu";
+                case SOLARIS -> "sun-solaris";
+                case WINDOWS -> "pc-windows-gnu";
+                case FREEBSD -> "unknown-freebsd";
+            };
         }
 
         public String libExt() {
-            switch (this) {
-                case MAC:
-                    return "dylib";
-                case LINUX:
-                case FREEBSD:
-                case SOLARIS:
-                    return "so";
-                case WINDOWS:
-                    return "dll";
-            }
-
-            throw new RuntimeException("How did we get here?");
+            return switch (this) {
+                case MAC -> "dylib";
+                case LINUX, FREEBSD, SOLARIS -> "so";
+                case WINDOWS -> "dll";
+            };
         }
     }
 
-    private static enum Arch {
+    private enum Arch {
         X86_64,
         X86_32,
         PPC_32,
@@ -96,100 +74,46 @@ public class NativeLoader {
         public static Arch detect() {
             String arch = System.getProperty("os.arch").toLowerCase();
 
-            switch (arch) {
-                case "x86_64":
-                case "amd64":
-                case "ia64":
-                case "x64":
-                    return X86_64;
-                case "x86_32":
-                case "x86":
-                case "i386":
-                case "i686":
-                case "i586":
-                case "i486":
-                case "ia32":
-                case "x32":
-                    return X86_32;
-                case "sparc":
-                case "sparc32":
-                    return SPARC_32;
-                case "sparcv9":
-                case "sparc64":
-                    return SPARC_64;
-                case "arm":
-                case "arm32":
-                    return ARM_32;
-                case "aarch64":
-                case "arm64":
-                    return ARM_64;
-                case "mips":
-                case "mips32":
-                    return MIPS_32;
-                case "mips64":
-                    return MIPS_64;
-                case "mipsel":
-                case "mips32el":
-                    return MIPSEL_32;
-                case "mips64el":
-                    return MIPSEL_64;
-                case "ppc":
-                case "ppc32":
-                    return PPC_32;
-                case "ppc64":
-                    return PPC_64;
-                case "ppcle":
-                case "ppc32le":
-                    return PPCLE_32;
-                case "ppc64le":
-                    return PPCLE_64;
-                case "riscv":
-                case "riscv32":
-                    return RISCV_32;
-                case "riscv64":
-                    return RISCV_64;
-            }
-
-            throw new IllegalArgumentException("Unknown architecture: " + arch);
+            return switch (arch) {
+                case "x86_64", "amd64", "ia64", "x64" -> X86_64;
+                case "x86_32", "x86", "i386", "i686", "i586", "i486", "ia32", "x32" -> X86_32;
+                case "sparc", "sparc32" -> SPARC_32;
+                case "sparcv9", "sparc64" -> SPARC_64;
+                case "arm", "arm32" -> ARM_32;
+                case "aarch64", "arm64" -> ARM_64;
+                case "mips", "mips32" -> MIPS_32;
+                case "mips64" -> MIPS_64;
+                case "mipsel", "mips32el" -> MIPSEL_32;
+                case "mips64el" -> MIPSEL_64;
+                case "ppc", "ppc32" -> PPC_32;
+                case "ppc64" -> PPC_64;
+                case "ppcle", "ppc32le" -> PPCLE_32;
+                case "ppc64le" -> PPCLE_64;
+                case "riscv", "riscv32" -> RISCV_32;
+                case "riscv64" -> RISCV_64;
+                default -> throw new IllegalArgumentException("Unknown architecture: " + arch);
+            };
         }
 
         public String triplePart() {
-            switch (this) {
-                case X86_64:
-                    return "x86_64";
-                case X86_32:
-                    return "i686";
-                case PPC_32:
-                    return "powerpc";
-                case PPC_64:
-                    return "powerpc64";
-                case PPCLE_32:
-                    throw new UnsupportedOperationException("ppc32le is not supported by Rust!");
-                case PPCLE_64:
-                    return "powerpc64le";
-                case SPARC_64:
-                    return "sparc64";
-                case SPARC_32:
-                    return "sparc";
-                case ARM_32:
-                    return "arm";
-                case ARM_64:
-                    return "aarch64";
-                case RISCV_32:
-                    return "riscv32gc";
-                case RISCV_64:
-                    return "riscv64gc";
-                case MIPS_32:
-                    return "mips";
-                case MIPS_64:
-                    return "mips64";
-                case MIPSEL_32:
-                    return "mipsel";
-                case MIPSEL_64:
-                    return "mips64el";
-            }
-
-            throw new RuntimeException("How did we get here?");
+            return switch (this) {
+                case X86_64 -> "x86_64";
+                case X86_32 -> "i686";
+                case PPC_32 -> "powerpc";
+                case PPC_64 -> "powerpc64";
+                case PPCLE_32 -> throw new UnsupportedOperationException("ppc32le is not supported by Rust!");
+                case PPCLE_64 -> "powerpc64le";
+                case SPARC_64 -> "sparc64";
+                case SPARC_32 -> "sparc";
+                case ARM_32 -> "arm";
+                case ARM_64 -> "aarch64";
+                case RISCV_32 -> "riscv32gc";
+                case RISCV_64 -> "riscv64gc";
+                case MIPS_32 -> "mips";
+                case MIPS_64 -> "mips64";
+                case MIPSEL_32 -> "mipsel";
+                case MIPSEL_64 -> "mips64el";
+            };
         }
     }
 }

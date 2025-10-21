@@ -1,0 +1,5 @@
+wrapped class StrVec {
+    static init fn new() -> Self;
+
+    mut fn push(item: String);
+};

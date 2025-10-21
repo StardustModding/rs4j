@@ -10,15 +10,13 @@ use anyhow::Result;
 
 use crate::class::Class;
 
-use super::gen::Generator;
+use super::cx::Generator;
 
 /// Generate Rust bindings and write them to a file.
-pub fn gen_rust_code(gen: Generator, classes: Vec<Class>, out_file: PathBuf) -> Result<()> {
+pub fn gen_rust_code(_cx: &Generator, classes: &Vec<Class>, out_file: &PathBuf) -> Result<()> {
     let mut data = "use rs4j::prelude::*;\n\n".to_string();
 
     for class in classes {
-        let class = class.set_package(&gen.package);
-
         data.push_str(&format!("{}\n\n", class.rust_code()));
     }
 
