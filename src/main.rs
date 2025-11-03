@@ -43,6 +43,7 @@ pub fn run_build(args: Vec<String>, zigbuild: bool) -> Result<()> {
     Command::new("cargo")
         .envs(env::vars())
         .arg(build_cmd)
+        .arg("--release")
         .args(&args)
         .spawn()?
         .wait()?;
@@ -81,7 +82,7 @@ pub fn run_build(args: Vec<String>, zigbuild: bool) -> Result<()> {
     let data = serde_json::from_str::<Value>(&raw)?;
     let data_toml = serde_json::from_str::<Value>(&raw_toml)?;
 
-    let dir = PathBuf::from(data.get("target_directory").unwrap().as_str().unwrap()).join("debug");
+    let dir = PathBuf::from(data.get("target_directory").unwrap().as_str().unwrap()).join("release");
 
     let name = data_toml.get("name").unwrap().as_str().unwrap();
 
