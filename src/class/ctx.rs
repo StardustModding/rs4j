@@ -41,7 +41,7 @@ impl ClassCtx {
         format!(
             "{}_{}",
             self.base_name(),
-            method.as_ref().replace("_", "_1")
+            method.as_ref()
         )
     }
 
